@@ -4,7 +4,7 @@ use axum::{http::StatusCode, response::IntoResponse, routing::get, Router};
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let app = Router::new().route("/health", get(health_check));
+    let app = Router::new().route("/health_check", get(health_check));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
     axum::serve(listener, app).await.unwrap();
