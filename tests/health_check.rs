@@ -2,8 +2,9 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
 use serde_json::Value;
-use sqlx::{postgres::PgPoolOptions, PgPool};
-use zero2prod::config::get_configuration;
+use sqlx::{postgres::PgPoolOptions, Connection, Executor, PgConnection, PgPool};
+use uuid::Uuid;
+use zero2prod::config::{get_configuration, DatabaseSettings};
 
 struct TestApp {
     addr: String,
@@ -11,31 +12,51 @@ struct TestApp {
 }
 
 async fn spawn_app() -> TestApp {
-    let config = get_configuration().expect("Failed to read configuration.");
+    let mut config = get_configuration().expect("Failed to read configuration.");
+    config.database.database_name = Uuid::new_v4().to_string();
+    let connection_pool = configure_database(&config.database).await;
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .expect("The OS should allocate an available port");
     let port = listener.local_addr().unwrap().port();
 
-    let db = PgPoolOptions::new()
-        .max_connections(50)
-        .connect(&config.database.connection_string())
-        .await
-        .unwrap();
-
     let app = TestApp {
         addr: format!("http://127.0.0.1:{}", port),
-        db_pool: db.clone(),
+        db_pool: connection_pool.clone(),
     };
 
     let _ = tokio::spawn(async move {
-        zero2prod::app::serve(listener, db)
+        zero2prod::app::serve(listener, connection_pool)
             .await
             .expect("The server should be running")
     });
 
     app
+}
+
+pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
+    // Create database
+    let mut connection = PgConnection::connect(&config.connection_string_without_db())
+        .await
+        .expect("Failed to connect to Postgres");
+
+    connection
+        .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+        .await
+        .expect("Failed to create database.");
+
+    // Migrate database
+    let connection_pool = PgPool::connect(&config.connection_string())
+        .await
+        .expect("Failed to connect to Postgres.");
+
+    sqlx::migrate!("./migrations")
+        .run(&connection_pool)
+        .await
+        .expect("Failed to migrate the database");
+
+    connection_pool
 }
 
 fn get_client() -> ClientWithMiddleware {
