@@ -2,10 +2,15 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
 use serde_json::Value;
-use sqlx::{postgres::PgPoolOptions, Connection, PgConnection};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use zero2prod::config::get_configuration;
 
-async fn spawn_app() -> String {
+struct TestApp {
+    addr: String,
+    db_pool: PgPool,
+}
+
+async fn spawn_app() -> TestApp {
     let config = get_configuration().expect("Failed to read configuration.");
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
@@ -19,13 +24,18 @@ async fn spawn_app() -> String {
         .await
         .unwrap();
 
+    let app = TestApp {
+        addr: format!("http://127.0.0.1:{}", port),
+        db_pool: db.clone(),
+    };
+
     let _ = tokio::spawn(async move {
         zero2prod::app::serve(listener, db)
             .await
             .expect("The server should be running")
     });
 
-    format!("http://127.0.0.1:{}", port)
+    app
 }
 
 fn get_client() -> ClientWithMiddleware {
@@ -39,11 +49,11 @@ fn get_client() -> ClientWithMiddleware {
 
 #[tokio::test]
 async fn health_check_works() {
-    let addr = spawn_app().await;
+    let app = spawn_app().await;
     let client = get_client();
 
     let response = client
-        .get(format!("{}/health_check", addr))
+        .get(format!("{}/health_check", app.addr))
         .send()
         .await
         .expect("Request should succeed");
@@ -54,20 +64,13 @@ async fn health_check_works() {
 
 #[tokio::test]
 async fn subscribe_returns_200_for_valid_form_data() {
-    let addr = spawn_app().await;
-    let configuration = get_configuration().expect("Failed to read configuration");
-    let connection_string = configuration.database.connection_string();
-    // The `Connection` trait MUST be in scope for us to invoke
-    // `PgConnection::connect` - it is not an inherent method of the struct!
-    let mut connection = PgConnection::connect(&connection_string)
-        .await
-        .expect("Failed to connect to Postgres.");
+    let app = spawn_app().await;
 
     let client = get_client();
     let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
 
     let response = client
-        .post(format!("{}/subscribe", addr))
+        .post(format!("{}/subscribe", app.addr))
         .json(&serde_json::from_str::<Value>(body).unwrap())
         .send()
         .await
@@ -76,7 +79,7 @@ async fn subscribe_returns_200_for_valid_form_data() {
     assert_eq!(200, response.status().as_u16());
 
     let saved = sqlx::query!("SELECT email, name FROM subscriptions",)
-        .fetch_one(&mut connection)
+        .fetch_one(&app.db_pool)
         .await
         .expect("Failed to fetch saved subscription");
 
@@ -86,7 +89,7 @@ async fn subscribe_returns_200_for_valid_form_data() {
 
 #[tokio::test]
 async fn subscribe_returns_a_400_when_data_is_missing() {
-    let addr = spawn_app().await;
+    let app = spawn_app().await;
     let client = get_client();
     let test_cases = [
         (r#"{"name": "bulbasaur"}"#, "missing the email"),
@@ -96,7 +99,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
 
     for (invald_body, error_message) in test_cases {
         let response = client
-            .post(format!("{}/subscribe", addr))
+            .post(format!("{}/subscribe", app.addr))
             .json(&serde_json::from_str::<Value>(invald_body).unwrap())
             .send()
             .await
