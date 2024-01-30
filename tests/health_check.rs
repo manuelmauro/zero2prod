@@ -106,7 +106,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
             .expect("Failed to execute request");
 
         assert_eq!(
-            400,
+            422,
             response.status().as_u16(),
             "The API did not fail with 400 when the payload was {}",
             error_message
