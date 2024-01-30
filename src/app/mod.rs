@@ -1,16 +1,24 @@
-use axum::{
-    routing::{get, post},
-    Router,
-};
+use axum::Router;
+use sqlx::PgPool;
 use tokio::net::TcpListener;
+use tower_http::trace::TraceLayer;
 
 mod health;
 mod subscription;
 
-pub async fn serve(listener: TcpListener) -> Result<(), std::io::Error> {
-    let app = Router::new()
-        .route("/health_check", get(health::health_check))
-        .route("/subscribe", post(subscription::subscribe));
+#[derive(Clone)]
+pub struct AppState {
+    db: PgPool,
+}
 
-    axum::serve(listener, app).await
+fn app_router() -> Router<AppState> {
+    health::router().merge(subscription::router())
+}
+
+pub async fn serve(listener: TcpListener, db: PgPool) -> Result<(), std::io::Error> {
+    let app = app_router()
+        .with_state(AppState { db })
+        .layer(TraceLayer::new_for_http());
+
+    axum::serve(listener, app.into_make_service()).await
 }

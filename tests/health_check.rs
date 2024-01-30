@@ -2,17 +2,25 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
 use serde_json::Value;
-use sqlx::{Connection, PgConnection};
+use sqlx::{postgres::PgPoolOptions, Connection, PgConnection};
 use zero2prod::config::get_configuration;
 
 async fn spawn_app() -> String {
+    let config = get_configuration().expect("Failed to read configuration.");
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .expect("The OS should allocate an available port");
     let port = listener.local_addr().unwrap().port();
 
+    let db = PgPoolOptions::new()
+        .max_connections(50)
+        .connect(&config.database.connection_string())
+        .await
+        .unwrap();
+
     let _ = tokio::spawn(async move {
-        zero2prod::app::serve(listener)
+        zero2prod::app::serve(listener, db)
             .await
             .expect("The server should be running")
     });
