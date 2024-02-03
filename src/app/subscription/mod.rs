@@ -1,5 +1,5 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
-use tracing::Instrument;
+use tracing::instrument;
 
 use super::AppState;
 
@@ -13,31 +13,32 @@ pub struct NewSubscriber {
     pub email: String,
 }
 
+#[instrument(name = "adding a new subscriber", skip(state, body), fields(email = %body.email, name = %body.name))]
 pub async fn subscribe(
     State(state): State<AppState>,
     Json(body): Json<NewSubscriber>,
 ) -> impl IntoResponse {
-    tracing::info!(
-        email = body.email,
-        name = body.name,
-        "adding a new subscriber",
-    );
+    match insert_subscriber(&state.db, body).await {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
 
-    let query_span = tracing::info_span!("saving new subscriber details in the database");
-    match sqlx::query!(
+#[instrument(name = "inserting new subscriber into the database", skip(db, subscriber), fields(email = %subscriber.email, name = %subscriber.name))]
+async fn insert_subscriber(
+    db: &sqlx::PgPool,
+    subscriber: NewSubscriber,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
         r#"insert into subscriptions (id, email, name, subscribed_at) values ($1, $2, $3, $4) returning id"#,
         uuid::Uuid::new_v4(),
-        body.email,
-        body.name,
+        subscriber.email,
+        subscriber.name,
         chrono::Utc::now(),
-    ).fetch_one(&state.db).instrument(query_span).await {
-        Ok(_) => {
-            tracing::info!("new subscriber details have been saved");
-            StatusCode::OK
-        }
-        Err(e) => {
-            tracing::error!(detail=e.to_string(), "failed to save new subscriber");
-            StatusCode::INTERNAL_SERVER_ERROR}
-            ,
-    }
+    ).fetch_one(db).await.map_err(|e| {
+        tracing::error!(detail = e.to_string(), "failed to save new subscriber");
+        e
+    })?;
+
+    Ok(())
 }

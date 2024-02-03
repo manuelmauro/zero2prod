@@ -1,4 +1,5 @@
 use anyhow::Context;
+use secrecy::ExposeSecret;
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::util::SubscriberInitExt;
 use zero2prod::{app, config::get_configuration, telemetry::get_subscriber};
@@ -11,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
 
     let db = PgPoolOptions::new()
         .max_connections(50)
-        .connect(&config.database.connection_string())
+        .connect(config.database.connection_string().expose_secret())
         .await
         .context("Could not connect to database")?;
 

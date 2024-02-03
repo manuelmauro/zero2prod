@@ -2,6 +2,7 @@ use once_cell::sync::Lazy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
+use secrecy::ExposeSecret;
 use serde_json::Value;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::util::SubscriberInitExt;
@@ -12,7 +13,7 @@ use zero2prod::{
 };
 
 static TRACING: Lazy<()> = Lazy::new(|| {
-    let env_filter = "zero2prod=trace,tower_http=trace,axum::rejection=trace";
+    let env_filter = "zero2prod=trace,sqlx=trace,tower_http=trace,axum::rejection=trace";
 
     if std::env::var("TEST_LOG").is_ok() {
         get_subscriber(env_filter, std::io::stdout).init();
@@ -54,9 +55,10 @@ async fn spawn_app() -> TestApp {
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
-    let mut connection = PgConnection::connect(&config.connection_string_without_db())
-        .await
-        .expect("Failed to connect to Postgres");
+    let mut connection =
+        PgConnection::connect(&config.connection_string_without_db().expose_secret())
+            .await
+            .expect("Failed to connect to Postgres");
 
     connection
         .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
@@ -64,7 +66,7 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("Failed to create database.");
 
     // Migrate database
-    let connection_pool = PgPool::connect(&config.connection_string())
+    let connection_pool = PgPool::connect(&config.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres.");
 
