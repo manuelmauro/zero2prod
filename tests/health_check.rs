@@ -3,8 +3,12 @@ use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
 use serde_json::Value;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
-use zero2prod::config::{get_configuration, DatabaseSettings};
+use zero2prod::{
+    config::{get_configuration, DatabaseSettings},
+    telemetry::get_subscriber,
+};
 
 struct TestApp {
     addr: String,
@@ -12,6 +16,8 @@ struct TestApp {
 }
 
 async fn spawn_app() -> TestApp {
+    get_subscriber("zero2prod=trace,tower_http=trace,axum::rejection=trace").init();
+
     let mut config = get_configuration().expect("Failed to read configuration.");
     config.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(&config.database).await;
