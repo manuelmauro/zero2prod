@@ -18,9 +18,9 @@ pub async fn subscribe(
     Json(body): Json<NewSubscriber>,
 ) -> impl IntoResponse {
     tracing::info!(
-        "adding a new subscriber with email {} and name {} to the database",
-        body.email,
-        body.name
+        email = body.email,
+        name = body.name,
+        "adding a new subscriber",
     );
 
     let query_span = tracing::info_span!("saving new subscriber details in the database");
@@ -36,7 +36,7 @@ pub async fn subscribe(
             StatusCode::OK
         }
         Err(e) => {
-            tracing::error!("failed to save new subscriber details: {:?}", e);
+            tracing::error!(detail=e.to_string(), "failed to save new subscriber");
             StatusCode::INTERNAL_SERVER_ERROR}
             ,
     }
