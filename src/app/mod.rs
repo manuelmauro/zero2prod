@@ -16,22 +16,20 @@ fn app_router() -> Router<AppState> {
 }
 
 pub async fn serve(listener: TcpListener, db: PgPool) -> Result<(), std::io::Error> {
-    let app = app_router()
-        .with_state(AppState { db })
-        .layer(TraceLayer::new_for_http());
+    let app =
+        app_router()
+            .with_state(AppState { db })
+            .layer(
+                TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+                    let id = uuid::Uuid::new_v4();
+                    tracing::info_span!(
+                        "request",
+                        method = ?request.method(),
+                        uri = ?request.uri(),
+                        %id,
+                    )
+                }),
+            );
 
-    axum::serve(
-        listener,
-        app.layer(
-            TraceLayer::new_for_http().make_span_with(|_request: &Request<_>| {
-                let id = uuid::Uuid::new_v4();
-                tracing::info_span!(
-                    "http_request",
-                    %id,
-                )
-            }),
-        )
-        .into_make_service(),
-    )
-    .await
+    axum::serve(listener, app.into_make_service()).await
 }
