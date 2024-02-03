@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
@@ -10,13 +11,23 @@ use zero2prod::{
     telemetry::get_subscriber,
 };
 
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let env_filter = "zero2prod=trace,tower_http=trace,axum::rejection=trace";
+
+    if std::env::var("TEST_LOG").is_ok() {
+        get_subscriber(env_filter, std::io::stdout).init();
+    } else {
+        get_subscriber(env_filter, std::io::sink).init();
+    };
+});
+
 struct TestApp {
     addr: String,
     db_pool: PgPool,
 }
 
 async fn spawn_app() -> TestApp {
-    get_subscriber("zero2prod=trace,tower_http=trace,axum::rejection=trace").init();
+    Lazy::force(&TRACING);
 
     let mut config = get_configuration().expect("Failed to read configuration.");
     config.database.database_name = Uuid::new_v4().to_string();
@@ -115,7 +126,7 @@ async fn subscribe_returns_200_for_valid_form_data() {
 }
 
 #[tokio::test]
-async fn subscribe_returns_a_400_when_data_is_missing() {
+async fn subscribe_returns_a_422_when_data_is_missing() {
     let app = spawn_app().await;
     let client = get_client();
     let test_cases = [
@@ -135,7 +146,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
         assert_eq!(
             422,
             response.status().as_u16(),
-            "The API did not fail with 400 when the payload was {}",
+            "The API did not fail with 422 when the payload was {}",
             error_message
         )
     }

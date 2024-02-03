@@ -5,9 +5,9 @@ use zero2prod::{app, config::get_configuration, telemetry::get_subscriber};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    get_subscriber("zero2prod=trace,tower_http=trace,axum::rejection=trace").init();
-
     let config = get_configuration().expect("Failed to read configuration.");
+
+    get_subscriber(&config.log_level, std::io::stderr).init();
 
     let db = PgPoolOptions::new()
         .max_connections(50)
