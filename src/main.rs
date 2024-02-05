@@ -22,7 +22,11 @@ async fn main() -> anyhow::Result<()> {
     .await
     .expect("The socket should be available");
 
-    tracing::info!(port = config.application.port, "starting server");
+    tracing::info!(
+        host = config.application.host,
+        port = config.application.port,
+        "starting server"
+    );
     app::serve(listener, db)
         .await
         .expect("The server should be running");
