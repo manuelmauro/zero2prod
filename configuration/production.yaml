@@ -1,3 +1,3 @@
 application:
   host: "0.0.0.0"
-  log_level: "zero2prod=debug,sqlx=info,tower_http=info,axum::rejection=info"
+  log_level: "zero2prod=debug,sqlx=debug,tower_http=debug,axum::rejection=debug"
