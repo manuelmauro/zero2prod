@@ -2,7 +2,6 @@ use once_cell::sync::Lazy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
-use secrecy::ExposeSecret;
 use serde_json::Value;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::util::SubscriberInitExt;
@@ -55,25 +54,24 @@ async fn spawn_app() -> TestApp {
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
-    let mut connection =
-        PgConnection::connect(&config.connection_string_without_db().expose_secret())
-            .await
-            .expect("Failed to connect to Postgres");
+    let mut connection = PgConnection::connect_with(&config.without_db())
+        .await
+        .expect("A postgres connection should be created.");
 
     connection
         .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
         .await
-        .expect("Failed to create database.");
+        .expect("The database should be created.");
 
     // Migrate database
-    let connection_pool = PgPool::connect(&config.connection_string().expose_secret())
+    let connection_pool = PgPool::connect_with(config.with_db())
         .await
-        .expect("Failed to connect to Postgres.");
+        .expect("A postgres connection pool should be created.");
 
     sqlx::migrate!("./migrations")
         .run(&connection_pool)
         .await
-        .expect("Failed to migrate the database");
+        .expect("The migrations should run without error.");
 
     connection_pool
 }
@@ -114,14 +112,14 @@ async fn subscribe_returns_200_for_valid_form_data() {
         .json(&serde_json::from_str::<Value>(body).unwrap())
         .send()
         .await
-        .expect("Failed to execute request");
+        .expect("The request should succeed.");
 
     assert_eq!(200, response.status().as_u16());
 
     let saved = sqlx::query!("SELECT email, name FROM subscriptions",)
         .fetch_one(&app.db_pool)
         .await
-        .expect("Failed to fetch saved subscription");
+        .expect("The saved subscription should exist.");
 
     assert_eq!(saved.email, "bulbasaur@mail.com");
     assert_eq!(saved.name, "bulbasaur");
@@ -143,7 +141,7 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
             .json(&serde_json::from_str::<Value>(invald_body).unwrap())
             .send()
             .await
-            .expect("Failed to execute request");
+            .expect("The request should succeed.");
 
         assert_eq!(
             422,
