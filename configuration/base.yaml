@@ -1,5 +1,6 @@
-application_port: 8080
-log_level: "zero2prod=trace,sqlx=trace,tower_http=trace,axum::rejection=trace"
+application:
+  port: 8080
+  log_level: "zero2prod=trace,sqlx=trace,tower_http=trace,axum::rejection=trace"
 database:
   host: "127.0.0.1"
   port: 5432
