@@ -1,20 +1,10 @@
 name: Rust
 
-on:
-  # NB: this differs from the book's project!
-  # These settings allow us to run this specific CI pipeline for PRs against
-  # this specific branch (a.k.a. book chapter).
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [ opened, synchronize, reopened ]
-    branches:
-      - main
+on: [push, pull_request]
 
 env:
   CARGO_TERM_COLOR: always
-  SQLX_VERSION: 0.7.1
+  SQLX_VERSION: 0.7.3
   SQLX_FEATURES: "rustls,postgres"
 
 jobs:
@@ -23,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:14
+        image: postgres:15
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
