@@ -1,6 +1,8 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
 use tracing::instrument;
 
+use crate::domain::SubscriberName;
+
 use super::AppState;
 
 pub fn router() -> Router<AppState> {
@@ -9,7 +11,7 @@ pub fn router() -> Router<AppState> {
 
 #[derive(serde::Deserialize)]
 pub struct NewSubscriber {
-    pub name: String,
+    pub name: SubscriberName,
     pub email: String,
 }
 
@@ -33,7 +35,7 @@ async fn insert_subscriber(
         r#"insert into subscriptions (id, email, name, subscribed_at) values ($1, $2, $3, $4) returning id"#,
         uuid::Uuid::new_v4(),
         subscriber.email,
-        subscriber.name,
+        subscriber.name.as_ref(),
         chrono::Utc::now(),
     ).fetch_one(db).await.map_err(|e| {
         tracing::error!(detail = e.to_string(), "failed to save new subscriber");

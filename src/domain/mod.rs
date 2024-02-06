@@ -1,0 +1,43 @@
+use derive_more::Display;
+use serde::Deserialize;
+use unicode_segmentation::UnicodeSegmentation;
+
+#[derive(Display)]
+#[display(fmt = "{}", _0)]
+pub struct SubscriberName(String);
+
+impl TryFrom<String> for SubscriberName {
+    type Error = String;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        if value.trim().is_empty() {
+            return Err("name is empty".into());
+        }
+
+        if value.graphemes(true).count() > 256 {
+            return Err("name is too long".into());
+        }
+
+        let forbidden_characters = ['/', '(', ')', '"', '<', '>', '\\', '{', '}'];
+        if value.chars().any(|g| forbidden_characters.contains(&g)) {
+            return Err("name contains invalid characters".into());
+        }
+
+        Ok(Self(value))
+    }
+}
+
+impl<'de> Deserialize<'de> for SubscriberName {
+    fn deserialize<D>(deserializer: D) -> Result<SubscriberName, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        SubscriberName::try_from(s).map_err(serde::de::Error::custom)
+    }
+}
+
+impl AsRef<str> for SubscriberName {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
