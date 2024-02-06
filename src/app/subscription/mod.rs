@@ -1,7 +1,7 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
 use tracing::instrument;
 
-use crate::domain::SubscriberName;
+use crate::domain::subscriber;
 
 use super::AppState;
 
@@ -11,7 +11,7 @@ pub fn router() -> Router<AppState> {
 
 #[derive(serde::Deserialize)]
 pub struct NewSubscriber {
-    pub name: SubscriberName,
+    pub name: subscriber::Name,
     pub email: String,
 }
 
