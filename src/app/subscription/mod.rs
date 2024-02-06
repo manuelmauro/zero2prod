@@ -28,7 +28,7 @@ async fn insert_subscriber(
     sqlx::query!(
         r#"insert into subscriptions (id, email, name, subscribed_at) values ($1, $2, $3, $4) returning id"#,
         uuid::Uuid::new_v4(),
-        subscriber.email,
+        subscriber.email.as_ref(),
         subscriber.name.as_ref(),
         chrono::Utc::now(),
     ).fetch_one(db).await.map_err(|e| {
