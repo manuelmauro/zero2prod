@@ -41,3 +41,46 @@ impl AsRef<str> for SubscriberName {
         &self.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::domain::SubscriberName;
+
+    #[test]
+    fn a_256_grapheme_long_name_is_valid() {
+        let name = "a̐".repeat(256);
+        assert!(SubscriberName::try_from(name).is_ok());
+    }
+
+    #[test]
+    fn a_name_longer_than_256_graphemes_is_rejected() {
+        let name = "a".repeat(257);
+        assert!(SubscriberName::try_from(name).is_err());
+    }
+
+    #[test]
+    fn whitespace_only_names_are_rejected() {
+        let name = " ".to_string();
+        assert!(SubscriberName::try_from(name).is_err());
+    }
+
+    #[test]
+    fn empty_string_is_rejected() {
+        let name = "".to_string();
+        assert!(SubscriberName::try_from(name).is_err());
+    }
+
+    #[test]
+    fn names_containing_an_invalid_character_are_rejected() {
+        for name in &['/', '(', ')', '"', '<', '>', '\\', '{', '}'] {
+            let name = name.to_string();
+            assert!(SubscriberName::try_from(name).is_err());
+        }
+    }
+
+    #[test]
+    fn a_valid_name_is_parsed_successfully() {
+        let name = "Kurt Gödel".to_string();
+        assert!(SubscriberName::try_from(name).is_ok());
+    }
+}
