@@ -33,6 +33,9 @@ uuid = { version = "1.7.0", features = ["v4"] }
 validator = "0.16.1"
 
 [dev-dependencies]
+fake = "2.9.2"
+quickcheck = "1.0.3"
+quickcheck_macros = "1.0.0"
 reqwest = "0.11.23"
 reqwest-middleware = "0.2.4"
 reqwest-retry = "0.3.0"

@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
         config.application.host, config.application.port
     ))
     .await
-    .expect("The listener should be able to bind to the address.");
+    .expect("The listener should be able to bind the address.");
 
     tracing::info!(
         host = config.application.host,
