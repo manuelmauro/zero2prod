@@ -1,5 +1,4 @@
 use derive_more::Display;
-use serde::Deserialize;
 use validator::validate_email;
 
 #[derive(Display)]
@@ -14,16 +13,6 @@ impl TryFrom<String> for Email {
         } else {
             Err("invalid email".into())
         }
-    }
-}
-
-impl<'de> Deserialize<'de> for Email {
-    fn deserialize<D>(deserializer: D) -> Result<Email, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Email::try_from(s).map_err(serde::de::Error::custom)
     }
 }
 

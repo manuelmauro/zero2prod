@@ -1,5 +1,4 @@
 use derive_more::Display;
-use serde::Deserialize;
 use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Display)]
@@ -23,16 +22,6 @@ impl TryFrom<String> for Name {
         }
 
         Ok(Self(value))
-    }
-}
-
-impl<'de> Deserialize<'de> for Name {
-    fn deserialize<D>(deserializer: D) -> Result<Name, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Name::try_from(s).map_err(serde::de::Error::custom)
     }
 }
 

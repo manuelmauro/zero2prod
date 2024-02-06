@@ -1,9 +1,9 @@
+use super::AppState;
+use crate::domain::subscriber::NewSubscriber;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
 use tracing::instrument;
 
-use crate::domain::subscriber::NewSubscriber;
-
-use super::AppState;
+pub mod schema;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/subscribe", post(subscribe))
@@ -12,9 +12,17 @@ pub fn router() -> Router<AppState> {
 #[instrument(name = "adding a new subscriber", skip(state, body), fields(email = %body.email, name = %body.name))]
 pub async fn subscribe(
     State(state): State<AppState>,
-    Json(body): Json<NewSubscriber>,
+    Json(body): Json<schema::SubscribeBody>,
 ) -> impl IntoResponse {
-    match insert_subscriber(&state.db, body).await {
+    let new_subscriber = match NewSubscriber::try_from(body) {
+        Ok(subscriber) => subscriber,
+        Err(e) => {
+            tracing::error!(detail = e, "failed to parse subscriber from body");
+            return StatusCode::BAD_REQUEST;
+        }
+    };
+
+    match insert_subscriber(&state.db, new_subscriber).await {
         Ok(_) => StatusCode::OK,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
