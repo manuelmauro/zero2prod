@@ -1,18 +1,12 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, routing::post, Json, Router};
 use tracing::instrument;
 
-use crate::domain::subscriber;
+use crate::domain::subscriber::NewSubscriber;
 
 use super::AppState;
 
 pub fn router() -> Router<AppState> {
     Router::new().route("/subscribe", post(subscribe))
-}
-
-#[derive(serde::Deserialize)]
-pub struct NewSubscriber {
-    pub name: subscriber::Name,
-    pub email: String,
 }
 
 #[instrument(name = "adding a new subscriber", skip(state, body), fields(email = %body.email, name = %body.name))]
