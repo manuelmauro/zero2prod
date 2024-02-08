@@ -1,7 +1,7 @@
 use derive_more::Display;
 use validator::validate_email;
 
-#[derive(Display)]
+#[derive(Display, Clone)]
 #[display(fmt = "{}", _0)]
 pub struct Email(String);
 

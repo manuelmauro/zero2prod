@@ -3,3 +3,6 @@ application:
   log_level: "zero2prod=debug,sqlx=debug,tower_http=debug,axum::rejection=debug"
 database:
   require_ssl: true
+email_client:
+  base_url: "https://api.postmarkapp.com"
+  sender_email: "something@gmail.com”"

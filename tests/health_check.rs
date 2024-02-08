@@ -8,6 +8,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
 use zero2prod::{
     config::{get_configuration, DatabaseSettings},
+    email::EmailClient,
     telemetry::get_subscriber,
 };
 
@@ -33,6 +34,15 @@ async fn spawn_app() -> TestApp {
     config.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(&config.database).await;
 
+    let email_client = EmailClient::new(
+        config.email_client.base_url,
+        config
+            .email_client
+            .sender_email
+            .try_into()
+            .expect("The sender email should be valid."),
+    );
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .expect("The OS should allocate an available port");
@@ -44,7 +54,7 @@ async fn spawn_app() -> TestApp {
     };
 
     let _ = tokio::spawn(async move {
-        zero2prod::app::serve(listener, connection_pool)
+        zero2prod::app::serve(listener, connection_pool, email_client)
             .await
             .expect("The server should be running")
     });

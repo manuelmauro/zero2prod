@@ -7,10 +7,17 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 #[derive(Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
+    pub email_client: EmailClientSettings,
     pub application: ApplicationSettings,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
+pub struct EmailClientSettings {
+    pub base_url: String,
+    pub sender_email: String,
+}
+
+#[derive(Deserialize)]
 pub struct ApplicationSettings {
     pub host: String,
     pub port: u16,
