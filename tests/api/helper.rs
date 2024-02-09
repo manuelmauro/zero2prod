@@ -6,8 +6,8 @@ use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
 use zero2prod::{
+    app::App,
     config::{get_configuration, DatabaseSettings},
-    email::EmailClient,
     telemetry::get_subscriber,
 };
 
@@ -30,37 +30,24 @@ pub async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
 
     let mut config = get_configuration().expect("Failed to read configuration.");
+    config.application.port = 0;
     config.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(&config.database).await;
 
-    let email_client = EmailClient::new(
-        config.email_client.base_url,
-        config
-            .email_client
-            .sender_email
-            .try_into()
-            .expect("The sender email should be valid."),
-        config.email_client.authorization_token,
-        std::time::Duration::from_secs(1),
-    );
+    let app = App::with(config).await;
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
-        .await
-        .expect("The OS should allocate an available port");
-    let port = listener.local_addr().unwrap().port();
-
-    let app = TestApp {
-        addr: format!("http://127.0.0.1:{}", port),
+    let test_app = TestApp {
+        addr: format!("http://127.0.0.1:{}", app.port()),
         db_pool: connection_pool.clone(),
     };
 
     let _ = tokio::spawn(async move {
-        zero2prod::app::serve(listener, connection_pool, email_client)
+        app.serve(connection_pool)
             .await
             .expect("The server should be running")
     });
 
-    app
+    test_app
 }
 
 async fn configure_database(config: &DatabaseSettings) -> PgPool {

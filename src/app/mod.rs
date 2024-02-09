@@ -1,4 +1,6 @@
-use crate::email::EmailClient;
+use std::net::IpAddr;
+
+use crate::{config::Settings, email::EmailClient};
 use axum::{http::Request, Router};
 use sqlx::PgPool;
 use tokio::net::TcpListener;
@@ -17,24 +19,65 @@ fn app_router() -> Router<AppState> {
     health::router().merge(subscription::router())
 }
 
-pub async fn serve(
+pub struct App {
     listener: TcpListener,
-    db: PgPool,
     email_client: EmailClient,
-) -> Result<(), std::io::Error> {
-    let app = app_router()
-        .with_state(AppState { db, email_client })
-        .layer(
-            TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
-                let id = uuid::Uuid::new_v4();
-                tracing::info_span!(
-                    "request",
-                    method = ?request.method(),
-                    uri = ?request.uri(),
-                    %id,
-                )
-            }),
+}
+
+impl App {
+    pub async fn with(config: Settings) -> Self {
+        // TODO do not take ownership of the config
+        let timeout = config.email_client.timeout();
+        let email_client = EmailClient::new(
+            config.email_client.base_url,
+            config
+                .email_client
+                .sender_email
+                .try_into()
+                .expect("The sender email should be valid."),
+            config.email_client.authorization_token,
+            timeout,
         );
 
-    axum::serve(listener, app.into_make_service()).await
+        let listener = tokio::net::TcpListener::bind(format!(
+            "{}:{}",
+            config.application.host, config.application.port
+        ))
+        .await
+        .expect("The listener should be able to bind the address.");
+
+        Self {
+            listener,
+            email_client,
+        }
+    }
+
+    pub fn host(&self) -> IpAddr {
+        self.listener.local_addr().unwrap().ip()
+    }
+
+    pub fn port(&self) -> u16 {
+        self.listener.local_addr().unwrap().port()
+    }
+
+    pub async fn serve(self, db: PgPool) -> Result<(), std::io::Error> {
+        let app = app_router()
+            .with_state(AppState {
+                db,
+                email_client: self.email_client,
+            })
+            .layer(
+                TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+                    let id = uuid::Uuid::new_v4();
+                    tracing::info_span!(
+                        "request",
+                        method = ?request.method(),
+                        uri = ?request.uri(),
+                        %id,
+                    )
+                }),
+            );
+
+        axum::serve(self.listener, app.into_make_service()).await
+    }
 }
