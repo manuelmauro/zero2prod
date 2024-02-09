@@ -32,7 +32,7 @@ pub struct TestApp {
 impl TestApp {
     pub async fn post_subscriptions(&self, body: &str) -> reqwest::Response {
         reqwest::Client::new()
-            .post(format!("{}/subscribe", &self.addr))
+            .post(format!("{}/subscriptions", &self.addr))
             .json(&serde_json::from_str::<Value>(body).unwrap())
             .send()
             .await

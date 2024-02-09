@@ -6,7 +6,7 @@ use tracing::instrument;
 pub mod schema;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/subscribe", post(subscribe))
+    Router::new().route("/subscriptions", post(subscribe))
 }
 
 #[instrument(name = "adding a new subscriber", skip(state, body), fields(email = %body.email, name = %body.name))]
