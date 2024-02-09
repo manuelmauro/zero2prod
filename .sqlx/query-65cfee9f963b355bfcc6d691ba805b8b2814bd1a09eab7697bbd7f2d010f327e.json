@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "insert into subscriptions (id, email, name, subscribed_at) values ($1, $2, $3, $4) returning id",
+  "query": "insert into subscriptions (id, email, name, subscribed_at, status) values ($1, $2, $3, $4, $5) returning id",
   "describe": {
     "columns": [
       {
@@ -14,12 +14,13 @@
         "Uuid",
         "Text",
         "Text",
-        "Timestamptz"
+        "Timestamptz",
+        "Text"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "2b3b1aa917631753edf12f15a2ee0f7736845f1057c64e3ff60d139fcd4166f7"
+  "hash": "65cfee9f963b355bfcc6d691ba805b8b2814bd1a09eab7697bbd7f2d010f327e"
 }
