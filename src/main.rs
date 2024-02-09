@@ -19,6 +19,8 @@ async fn main() -> anyhow::Result<()> {
             .sender_email
             .try_into()
             .expect("The sender email should be valid."),
+        config.email_client.authorization_token,
+        std::time::Duration::from_secs(1),
     );
 
     let listener = tokio::net::TcpListener::bind(format!(
