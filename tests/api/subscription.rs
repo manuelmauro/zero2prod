@@ -35,13 +35,14 @@ async fn subscribe_persists_the_new_subscriber() {
     let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
     app.post_subscriptions(body).await;
 
-    let saved = sqlx::query!("SELECT email, name FROM subscriptions",)
+    let saved = sqlx::query!("SELECT email, name, status FROM subscriptions",)
         .fetch_one(&app.db_pool)
         .await
         .expect("The saved subscription should exist.");
 
     assert_eq!(saved.email, "bulbasaur@mail.com");
     assert_eq!(saved.name, "bulbasaur");
+    assert_eq!(saved.status, "pending_confirmation");
 }
 
 #[tokio::test]
