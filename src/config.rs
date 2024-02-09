@@ -31,6 +31,7 @@ pub struct ApplicationSettings {
     pub port: u16,
     pub log_level: String,
 }
+
 #[derive(Deserialize)]
 pub struct DatabaseSettings {
     pub username: String,
@@ -61,6 +62,7 @@ impl DatabaseSettings {
         self.without_db().database(&self.database_name)
     }
 }
+
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     let base_path = std::env::current_dir().expect("The current directory should be valid.");
     let configuration_directory = base_path.join("configuration");
