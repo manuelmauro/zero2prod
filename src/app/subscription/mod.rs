@@ -34,11 +34,12 @@ async fn insert_subscriber(
     subscriber: NewSubscriber,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
-        r#"insert into subscriptions (id, email, name, subscribed_at) values ($1, $2, $3, $4) returning id"#,
+        r#"insert into subscriptions (id, email, name, subscribed_at, status) values ($1, $2, $3, $4, $5) returning id"#,
         uuid::Uuid::new_v4(),
         subscriber.email.as_ref(),
         subscriber.name.as_ref(),
         chrono::Utc::now(),
+        "confirmed",
     ).fetch_one(db).await.map_err(|e| {
         tracing::error!(detail = e.to_string(), "failed to save new subscriber");
         e
