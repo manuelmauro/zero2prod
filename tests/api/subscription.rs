@@ -1,20 +1,11 @@
-use serde_json::Value;
-
-use crate::helper::{get_client, spawn_app};
+use crate::helper::spawn_app;
 
 #[tokio::test]
 async fn subscribe_returns_200_for_valid_form_data() {
     let app = spawn_app().await;
 
-    let client = get_client();
     let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
-
-    let response = client
-        .post(format!("{}/subscribe", app.addr))
-        .json(&serde_json::from_str::<Value>(body).unwrap())
-        .send()
-        .await
-        .expect("The request should succeed.");
+    let response = app.post_subscriptions(body).await;
 
     assert_eq!(200, response.status().as_u16());
 
@@ -30,7 +21,6 @@ async fn subscribe_returns_200_for_valid_form_data() {
 #[tokio::test]
 async fn subscribe_returns_a_422_when_data_is_missing() {
     let app = spawn_app().await;
-    let client = get_client();
     let test_cases = [
         (r#"{"name": "bulbasaur"}"#, "missing the email"),
         (r#"{"email": "bulbasaur@mail.com"}"#, "missing the name"),
@@ -38,12 +28,7 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
     ];
 
     for (invald_body, error_message) in test_cases {
-        let response = client
-            .post(format!("{}/subscribe", app.addr))
-            .json(&serde_json::from_str::<Value>(invald_body).unwrap())
-            .send()
-            .await
-            .expect("The request should succeed.");
+        let response = app.post_subscriptions(invald_body).await;
 
         assert_eq!(
             422,
@@ -51,5 +36,31 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
             "The API did not fail with 422 when the payload was {}",
             error_message
         )
+    }
+}
+
+#[tokio::test]
+async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
+    let app = spawn_app().await;
+    let test_cases = vec![
+        (
+            r#"{"name": "", "email": "bulbasaur@mail.com"}"#,
+            "empty name",
+        ),
+        (r#"{"name": "bulbasaur", "email": ""}"#, "empty email"),
+        (
+            r#"{"name": "bulbasaur", "email": "definitely-not-an-email"}"#,
+            "invalid email",
+        ),
+    ];
+
+    for (body, description) in test_cases {
+        let response = app.post_subscriptions(body).await;
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "The API did not return a 400 Bad Request when the payload was {}.",
+            description
+        );
     }
 }

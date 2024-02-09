@@ -2,6 +2,7 @@ use once_cell::sync::Lazy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
+use serde_json::Value;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
@@ -24,6 +25,17 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 pub struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
+}
+
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: &str) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(format!("{}/subscribe", &self.addr))
+            .json(&serde_json::from_str::<Value>(body).unwrap())
+            .send()
+            .await
+            .expect("The request should succeed.")
+    }
 }
 
 pub async fn spawn_app() -> TestApp {
