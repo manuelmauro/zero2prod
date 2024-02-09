@@ -22,16 +22,30 @@ pub async fn subscribe(
         }
     };
 
-    match insert_subscriber(&state.db, new_subscriber).await {
-        Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    if let Err(_) = insert_subscriber(&state.db, &new_subscriber).await {
+        return StatusCode::INTERNAL_SERVER_ERROR;
     }
+
+    if let Err(_) = state
+        .email_client
+        .send_email(
+            &new_subscriber.email,
+            "Welcome!",
+            "Welcome to our newsletter!",
+            "Welcome to our newsletter!",
+        )
+        .await
+    {
+        return StatusCode::INTERNAL_SERVER_ERROR;
+    }
+
+    StatusCode::OK
 }
 
 #[instrument(name = "inserting new subscriber into the database", skip(db, subscriber), fields(email = %subscriber.email, name = %subscriber.name))]
 async fn insert_subscriber(
     db: &sqlx::PgPool,
-    subscriber: NewSubscriber,
+    subscriber: &NewSubscriber,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"insert into subscriptions (id, email, name, subscribed_at, status) values ($1, $2, $3, $4, 'confirmed') returning id"#,

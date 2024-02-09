@@ -6,6 +6,7 @@ use serde_json::Value;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
+use wiremock::MockServer;
 use zero2prod::{
     app::App,
     config::{get_configuration, DatabaseSettings},
@@ -25,6 +26,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 pub struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
+    pub email_server: MockServer,
 }
 
 impl TestApp {
@@ -41,16 +43,19 @@ impl TestApp {
 pub async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
 
+    let email_server = MockServer::start().await;
     let mut config = get_configuration().expect("Failed to read configuration.");
     config.application.port = 0;
     config.database.database_name = Uuid::new_v4().to_string();
-    let connection_pool = configure_database(&config.database).await;
+    config.email_client.base_url = email_server.uri();
 
+    let connection_pool = configure_database(&config.database).await;
     let app = App::with(config).await;
 
     let test_app = TestApp {
         addr: format!("http://127.0.0.1:{}", app.port()),
         db_pool: connection_pool.clone(),
+        email_server,
     };
 
     let _ = tokio::spawn(async move {
