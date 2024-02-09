@@ -38,6 +38,7 @@ validator = "0.16.1"
 
 [dev-dependencies]
 fake = "2.9.2"
+linkify = "0.10.0"
 quickcheck = "1.0.3"
 quickcheck_macros = "1.0.0"
 reqwest-middleware = "0.2.4"
