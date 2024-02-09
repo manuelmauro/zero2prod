@@ -12,6 +12,7 @@ async fn main() -> anyhow::Result<()> {
         .max_connections(50)
         .connect_lazy_with(config.database.with_db());
 
+    let timeout = config.email_client.timeout();
     let email_client = EmailClient::new(
         config.email_client.base_url,
         config
@@ -20,7 +21,7 @@ async fn main() -> anyhow::Result<()> {
             .try_into()
             .expect("The sender email should be valid."),
         config.email_client.authorization_token,
-        std::time::Duration::from_secs(1),
+        timeout,
     );
 
     let listener = tokio::net::TcpListener::bind(format!(
