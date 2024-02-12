@@ -13,6 +13,7 @@ mod subscription;
 pub struct AppState {
     db: PgPool,
     email_client: EmailClient,
+    base_url: String,
 }
 
 fn app_router() -> Router<AppState> {
@@ -22,6 +23,7 @@ fn app_router() -> Router<AppState> {
 pub struct App {
     listener: TcpListener,
     email_client: EmailClient,
+    base_url: String,
 }
 
 impl App {
@@ -49,6 +51,7 @@ impl App {
         Self {
             listener,
             email_client,
+            base_url: config.application.base_url,
         }
     }
 
@@ -65,6 +68,7 @@ impl App {
             .with_state(AppState {
                 db,
                 email_client: self.email_client,
+                base_url: self.base_url,
             })
             .layer(
                 TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {

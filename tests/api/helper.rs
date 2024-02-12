@@ -27,6 +27,7 @@ pub struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
     pub email_server: MockServer,
+    pub port: u16,
 }
 
 impl TestApp {
@@ -56,6 +57,7 @@ pub async fn spawn_app() -> TestApp {
         addr: format!("http://127.0.0.1:{}", app.port()),
         db_pool: connection_pool.clone(),
         email_server,
+        port: app.port(),
     };
 
     let _ = tokio::spawn(async move {

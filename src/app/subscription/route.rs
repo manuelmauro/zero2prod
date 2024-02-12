@@ -25,7 +25,9 @@ pub async fn subscribe(
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
 
-    if let Err(_) = send_confirmation_email(&state.email_client, &new_subscriber).await {
+    if let Err(_) =
+        send_confirmation_email(&state.email_client, &new_subscriber, &state.base_url).await
+    {
         return StatusCode::INTERNAL_SERVER_ERROR;
     }
 
@@ -63,8 +65,12 @@ async fn insert_subscriber(
 pub async fn send_confirmation_email(
     email_client: &EmailClient,
     new_subscriber: &NewSubscriber,
+    base_url: &str,
 ) -> Result<(), reqwest::Error> {
-    let confirmation_link = "https://there-is-no-such-domain.com/subscriptions/confirm";
+    let confirmation_link = format!(
+        "{}/subscriptions/confirm?subscription_token=mytoken",
+        base_url
+    );
 
     let plain_body = format!(
         "Welcome to our newsletter!\nVisit {} to confirm your subscription.",

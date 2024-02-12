@@ -29,6 +29,7 @@ impl EmailClientSettings {
 pub struct ApplicationSettings {
     pub host: String,
     pub port: u16,
+    pub base_url: String,
     pub log_level: String,
 }
 

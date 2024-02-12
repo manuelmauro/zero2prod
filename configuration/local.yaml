@@ -1,5 +1,6 @@
 application:
   host: "127.0.0.1"
+  base_url: "http://127.0.0.1"
   log_level: "zero2prod=trace,sqlx=trace,tower_http=trace,axum::rejection=trace"
 database:
   require_ssl: false
