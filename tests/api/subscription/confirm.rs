@@ -19,7 +19,7 @@ async fn confirmations_without_token_are_rejected_with_a_400() {
 #[tokio::test]
 async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
     let app = spawn_app().await;
-    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
+    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@example.com"}"#;
 
     Mock::given(path("/email"))
         .and(method("POST"))
@@ -39,7 +39,7 @@ async fn the_link_returned_by_subscribe_returns_a_200_if_called() {
 #[tokio::test]
 async fn clicking_on_the_confirmation_link_confirms_a_subscriber() {
     let app = spawn_app().await;
-    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
+    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@example.com"}"#;
 
     Mock::given(path("/email"))
         .and(method("POST"))
@@ -62,7 +62,7 @@ async fn clicking_on_the_confirmation_link_confirms_a_subscriber() {
         .await
         .expect("Failed to fetch saved subscription.");
 
-    assert_eq!(saved.email, "bulbasaur@mail.com");
+    assert_eq!(saved.email, "bulbasaur@example.com");
     assert_eq!(saved.name, "bulbasaur");
     assert_eq!(saved.status, "confirmed");
 }

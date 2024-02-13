@@ -16,7 +16,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .mount(&app.email_server)
         .await;
 
-    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
+    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@example.com"}"#;
     let response = app.post_subscriptions(body).await;
 
     assert_eq!(200, response.status().as_u16());
@@ -32,7 +32,7 @@ async fn subscribe_persists_the_new_subscriber() {
         .mount(&app.email_server)
         .await;
 
-    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
+    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@example.com"}"#;
     app.post_subscriptions(body).await;
 
     let saved = sqlx::query!("SELECT email, name, status FROM subscriptions",)
@@ -40,7 +40,7 @@ async fn subscribe_persists_the_new_subscriber() {
         .await
         .expect("The saved subscription should exist.");
 
-    assert_eq!(saved.email, "bulbasaur@mail.com");
+    assert_eq!(saved.email, "bulbasaur@example.com");
     assert_eq!(saved.name, "bulbasaur");
     assert_eq!(saved.status, "pending_confirmation");
 }
@@ -50,7 +50,7 @@ async fn subscribe_returns_a_422_when_data_is_missing() {
     let app = spawn_app().await;
     let test_cases = [
         (r#"{"name": "bulbasaur"}"#, "missing the email"),
-        (r#"{"email": "bulbasaur@mail.com"}"#, "missing the name"),
+        (r#"{"email": "bulbasaur@example.com"}"#, "missing the name"),
         ("{}", "missing both name and email"),
     ];
 
@@ -71,7 +71,7 @@ async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
     let app = spawn_app().await;
     let test_cases = vec![
         (
-            r#"{"name": "", "email": "bulbasaur@mail.com"}"#,
+            r#"{"name": "", "email": "bulbasaur@example.com"}"#,
             "empty name",
         ),
         (r#"{"name": "bulbasaur", "email": ""}"#, "empty email"),
@@ -103,14 +103,14 @@ async fn subscribe_sends_a_confirmation_email_for_valid_data() {
         .mount(&app.email_server)
         .await;
 
-    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
+    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@example.com"}"#;
     app.post_subscriptions(body.into()).await;
 }
 
 #[tokio::test]
 async fn subscribe_sends_a_confirmation_email_with_a_link() {
     let app = spawn_app().await;
-    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@mail.com"}"#;
+    let body = r#"{"name": "bulbasaur", "email": "bulbasaur@example.com"}"#;
 
     Mock::given(path("/email"))
         .and(method("POST"))
