@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "insert into subscriptions (id, email, name, subscribed_at, status) values ($1, $2, $3, $4, 'pending_confirmation') returning id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "be7dce69e4b9a1f4e1827e282386b3844c6eaaf71998c8180ff0a3ab8764c7e3"
+}
