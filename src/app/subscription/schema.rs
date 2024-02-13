@@ -18,5 +18,5 @@ impl TryFrom<SubscribeBody> for NewSubscriber {
 
 #[derive(Debug, Deserialize)]
 pub struct ConfirmParams {
-    subscription_token: String,
+    pub subscription_token: String,
 }
