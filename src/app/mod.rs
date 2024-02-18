@@ -1,10 +1,11 @@
-use std::net::IpAddr;
+use std::{io, net::IpAddr};
 
-use crate::{config::Settings, email::EmailClient};
 use axum::{http::Request, Router};
 use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
+
+use crate::{config::Settings, email::EmailClient};
 
 mod error;
 mod health;
@@ -64,7 +65,7 @@ impl App {
         self.listener.local_addr().unwrap().port()
     }
 
-    pub async fn serve(self, db: PgPool) -> Result<(), std::io::Error> {
+    pub async fn serve(self, db: PgPool) -> Result<(), io::Error> {
         let app = app_router()
             .with_state(AppState {
                 db,

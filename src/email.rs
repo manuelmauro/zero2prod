@@ -1,6 +1,9 @@
-use crate::domain::subscriber::email::Email;
+use std::time;
+
 use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
+
+use crate::domain::subscriber::email::Email;
 
 #[derive(Clone)]
 pub struct EmailClient {
@@ -15,7 +18,7 @@ impl EmailClient {
         base_url: String,
         sender: Email,
         authorization_token: Secret<String>,
-        timeout: std::time::Duration,
+        timeout: time::Duration,
     ) -> Self {
         let http_client = Client::builder().timeout(timeout).build().unwrap();
         Self {
@@ -67,14 +70,17 @@ struct SendEmailRequest<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::subscriber::email::Email;
-    use crate::email::EmailClient;
+    use std::time;
+
     use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::{Paragraph, Sentence};
     use fake::{Fake, Faker};
     use secrecy::Secret;
     use wiremock::matchers::{any, header, header_exists, method, path};
     use wiremock::{Mock, MockServer, Request, ResponseTemplate};
+
+    use crate::domain::subscriber::email::Email;
+    use crate::email::EmailClient;
 
     struct SendEmailBodyMatcher;
 
@@ -114,7 +120,7 @@ mod tests {
             base_url,
             email(),
             Secret::new(Faker.fake()),
-            std::time::Duration::from_millis(200),
+            time::Duration::from_millis(200),
         )
     }
 
@@ -174,7 +180,7 @@ mod tests {
     #[tokio::test]
     async fn send_email_times_out_if_the_server_takes_too_long() {
         let mock_server = MockServer::start().await;
-        let response = ResponseTemplate::new(200).set_delay(std::time::Duration::from_secs(180));
+        let response = ResponseTemplate::new(200).set_delay(time::Duration::from_secs(180));
         Mock::given(any())
             .respond_with(response)
             .expect(1)

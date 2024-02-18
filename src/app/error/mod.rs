@@ -1,3 +1,5 @@
+use std::result;
+
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -5,7 +7,7 @@ use axum::Json;
 mod schema;
 
 ///
-pub type AppResult<T, E = AppError> = std::result::Result<T, E>;
+pub type AppResult<T, E = AppError> = result::Result<T, E>;
 
 /// A common error type that can be used throughout the API.
 ///

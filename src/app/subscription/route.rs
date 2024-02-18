@@ -1,6 +1,5 @@
-use super::schema::{self, ConfirmParams};
-use crate::app::error::{AppError, AppResult};
-use crate::{app::AppState, domain::subscriber::NewSubscriber, email::EmailClient};
+use std::iter;
+
 use anyhow::Context;
 use axum::{
     extract::{Query, State},
@@ -11,6 +10,10 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::{Executor, PgPool, Postgres, Transaction};
 use tracing::instrument;
 use uuid::Uuid;
+
+use super::schema::{self, ConfirmParams};
+use crate::app::error::{AppError, AppResult};
+use crate::{app::AppState, domain::subscriber::NewSubscriber, email::EmailClient};
 
 #[instrument(name = "adding a new subscriber", skip(state, body), fields(email = %body.email, name = %body.name))]
 pub async fn subscribe(
@@ -128,7 +131,7 @@ pub async fn send_confirmation_email(
 /// Generate a random 25-characters-long case-sensitive subscription token.
 fn generate_subscription_token() -> String {
     let mut rng = thread_rng();
-    std::iter::repeat_with(|| rng.sample(Alphanumeric))
+    iter::repeat_with(|| rng.sample(Alphanumeric))
         .map(char::from)
         .take(25)
         .collect()

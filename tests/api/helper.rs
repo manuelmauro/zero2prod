@@ -1,3 +1,5 @@
+use std::{env, io};
+
 use once_cell::sync::Lazy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -16,10 +18,10 @@ use zero2prod::{
 static TRACING: Lazy<()> = Lazy::new(|| {
     let env_filter = "zero2prod=trace,sqlx=trace,tower_http=trace,axum::rejection=trace";
 
-    if std::env::var("TEST_LOG").is_ok() {
-        get_subscriber(env_filter, std::io::stdout).init();
+    if env::var("TEST_LOG").is_ok() {
+        get_subscriber(env_filter, io::stdout).init();
     } else {
-        get_subscriber(env_filter, std::io::sink).init();
+        get_subscriber(env_filter, io::sink).init();
     };
 });
 

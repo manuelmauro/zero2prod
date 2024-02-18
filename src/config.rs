@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{env, fmt, time};
 
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -6,9 +6,17 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
 #[derive(Deserialize)]
 pub struct Settings {
+    pub application: ApplicationSettings,
     pub database: DatabaseSettings,
     pub email_client: EmailClientSettings,
-    pub application: ApplicationSettings,
+}
+
+#[derive(Deserialize)]
+pub struct ApplicationSettings {
+    pub host: String,
+    pub port: u16,
+    pub base_url: String,
+    pub log_level: String,
 }
 
 #[derive(Deserialize)]
@@ -20,17 +28,9 @@ pub struct EmailClientSettings {
 }
 
 impl EmailClientSettings {
-    pub fn timeout(&self) -> std::time::Duration {
-        std::time::Duration::from_millis(self.timeout_milliseconds)
+    pub fn timeout(&self) -> time::Duration {
+        time::Duration::from_millis(self.timeout_milliseconds)
     }
-}
-
-#[derive(Deserialize)]
-pub struct ApplicationSettings {
-    pub host: String,
-    pub port: u16,
-    pub base_url: String,
-    pub log_level: String,
 }
 
 #[derive(Deserialize)]
@@ -65,10 +65,10 @@ impl DatabaseSettings {
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
-    let base_path = std::env::current_dir().expect("The current directory should be valid.");
+    let base_path = env::current_dir().expect("The current directory should be valid.");
     let configuration_directory = base_path.join("configuration");
 
-    let environment: Environment = std::env::var("APP_ENVIRONMENT")
+    let environment: Environment = env::var("APP_ENVIRONMENT")
         .unwrap_or_else(|_| "local".into())
         .try_into()
         .expect("The APP_ENVIRONMENT environment variable should be valid.");

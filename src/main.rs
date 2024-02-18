@@ -1,3 +1,5 @@
+use std::io;
+
 use sqlx::postgres::PgPoolOptions;
 use tracing_subscriber::util::SubscriberInitExt;
 use zero2prod::{app::App, config::get_configuration, telemetry::get_subscriber};
@@ -5,7 +7,7 @@ use zero2prod::{app::App, config::get_configuration, telemetry::get_subscriber};
 #[tokio::main]
 async fn main() {
     let config = get_configuration().expect("The configuration should load.");
-    get_subscriber(&config.application.log_level, std::io::stderr).init();
+    get_subscriber(&config.application.log_level, io::stderr).init();
 
     let db = PgPoolOptions::new()
         .max_connections(50)
