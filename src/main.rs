@@ -3,7 +3,7 @@ use tracing_subscriber::util::SubscriberInitExt;
 use zero2prod::{app::App, config::get_configuration, telemetry::get_subscriber};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
     let config = get_configuration().expect("The configuration should load.");
     get_subscriber(&config.application.log_level, std::io::stderr).init();
 
@@ -18,6 +18,4 @@ async fn main() -> anyhow::Result<()> {
         "starting server"
     );
     app.serve(db).await.expect("The server should be running.");
-
-    Ok(())
 }
