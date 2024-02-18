@@ -6,6 +6,7 @@ use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
+mod error;
 mod health;
 mod subscription;
 

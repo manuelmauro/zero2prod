@@ -1,9 +1,10 @@
 use super::schema::{self, ConfirmParams};
+use crate::app::error::{AppError, AppResult};
 use crate::{app::AppState, domain::subscriber::NewSubscriber, email::EmailClient};
+use anyhow::Context;
 use axum::{
     extract::{Query, State},
     http::StatusCode,
-    response::IntoResponse,
     Json,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
@@ -15,65 +16,59 @@ use uuid::Uuid;
 pub async fn subscribe(
     State(state): State<AppState>,
     Json(body): Json<schema::SubscribeBody>,
-) -> impl IntoResponse {
-    let new_subscriber = match NewSubscriber::try_from(body) {
-        Ok(subscriber) => subscriber,
-        Err(e) => {
-            tracing::error!(detail = e, "failed to parse subscriber from body");
-            return StatusCode::BAD_REQUEST;
-        }
-    };
+) -> AppResult<StatusCode> {
+    let new_subscriber = NewSubscriber::try_from(body).map_err(AppError::ValidationError)?;
 
-    let mut transaction = match state.db.begin().await {
-        Ok(transaction) => transaction,
-        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR,
-    };
+    let mut transaction = state
+        .db
+        .begin()
+        .await
+        .context("Failed to acquire a Postgres connection from the pool")?;
 
-    let subscriber_id = match insert_subscriber(&mut transaction, &new_subscriber).await {
-        Ok(subscriber_id) => subscriber_id,
-        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR,
-    };
+    let subscriber_id = insert_subscriber(&mut transaction, &new_subscriber)
+        .await
+        .context("Failed to insert new subscriber in the database.")?;
+
     let subscription_token = generate_subscription_token();
-    if let Err(_) = store_token(&mut transaction, subscriber_id, &subscription_token).await {
-        return StatusCode::INTERNAL_SERVER_ERROR;
-    }
+    store_token(&mut transaction, subscriber_id, &subscription_token)
+        .await
+        .context("Failed to store the confirmation token for a new subscriber.")?;
 
-    if let Err(_) = transaction.commit().await {
-        return StatusCode::INTERNAL_SERVER_ERROR;
-    }
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit SQL transaction to store a new subscriber.")?;
 
-    if let Err(_) = send_confirmation_email(
+    send_confirmation_email(
         &state.email_client,
         &new_subscriber,
         &state.base_url,
         &subscription_token,
     )
     .await
-    {
-        return StatusCode::INTERNAL_SERVER_ERROR;
-    }
+    .context("Failed to send confirmation email.")?;
 
-    StatusCode::OK
+    Ok(StatusCode::OK)
 }
 
 #[tracing::instrument(name = "Confirm a pending subscriber", skip(state, params))]
 pub async fn confirm(
     State(state): State<AppState>,
     Query(params): Query<ConfirmParams>,
-) -> impl IntoResponse {
+) -> AppResult<StatusCode> {
     let id = match get_subscriber_id_from_token(&state.db, &params.subscription_token).await {
         Ok(id) => id,
-        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR,
+        Err(_) => return Ok(StatusCode::INTERNAL_SERVER_ERROR),
     };
 
     match id {
         // Non-existing token!
-        None => StatusCode::UNAUTHORIZED,
+        None => Ok(StatusCode::UNAUTHORIZED),
         Some(subscriber_id) => {
-            if confirm_subscriber(&state.db, subscriber_id).await.is_err() {
-                return StatusCode::INTERNAL_SERVER_ERROR;
-            }
-            StatusCode::OK
+            confirm_subscriber(&state.db, subscriber_id)
+                .await
+                .context("Failed to update subscriber status.")?;
+            Ok(StatusCode::OK)
         }
     }
 }
@@ -92,10 +87,7 @@ async fn insert_subscriber(
         chrono::Utc::now(),
     );
 
-    transaction.execute(query).await.map_err(|e| {
-        tracing::error!(detail = e.to_string(), "failed to save new subscriber");
-        e
-    })?;
+    transaction.execute(query).await?;
 
     Ok(subscriber_id)
 }
@@ -126,16 +118,9 @@ pub async fn send_confirmation_email(
         confirmation_link
     );
 
-    if let Err(e) = email_client
+    email_client
         .send_email(&new_subscriber.email, "Welcome!", &html_body, &plain_body)
-        .await
-    {
-        tracing::error!(
-            detail = e.to_string(),
-            "Failed to send a confirmation email to the new subscriber"
-        );
-        return Err(e);
-    }
+        .await?;
 
     Ok(())
 }
@@ -151,7 +136,7 @@ fn generate_subscription_token() -> String {
 
 #[tracing::instrument(
     name = "Store subscription token in the database",
-    skip(subscription_token, transaction)
+    skip(transaction, subscription_token)
 )]
 pub async fn store_token(
     transaction: &mut Transaction<'_, Postgres>,
@@ -165,10 +150,7 @@ pub async fn store_token(
         subscriber_id
     );
 
-    transaction.execute(query).await.map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+    transaction.execute(query).await?;
 
     Ok(())
 }
@@ -180,11 +162,7 @@ pub async fn confirm_subscriber(pool: &PgPool, subscriber_id: Uuid) -> Result<()
         subscriber_id,
     )
     .execute(pool)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+    .await?;
 
     Ok(())
 }
@@ -200,11 +178,7 @@ pub async fn get_subscriber_id_from_token(
         subscription_token,
     )
     .fetch_optional(pool)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to execute query: {:?}", e);
-        e
-    })?;
+    .await?;
 
     Ok(result.map(|r| r.subscriber_id))
 }
