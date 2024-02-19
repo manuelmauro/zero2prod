@@ -1,4 +1,4 @@
-use std::{env, fmt, time};
+use std::{env, fmt, str::FromStr, time};
 
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -70,7 +70,7 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
 
     let environment: Environment = env::var("APP_ENVIRONMENT")
         .unwrap_or_else(|_| "local".into())
-        .try_into()
+        .parse()
         .expect("The APP_ENVIRONMENT environment variable should be valid.");
 
     let settings = config::Config::builder()
@@ -107,17 +107,20 @@ impl fmt::Display for Environment {
     }
 }
 
-impl TryFrom<String> for Environment {
-    type Error = String;
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseEnvironmentError(String);
 
-    fn try_from(s: String) -> Result<Self, Self::Error> {
+impl FromStr for Environment {
+    type Err = ParseEnvironmentError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "local" => Ok(Self::Local),
             "production" => Ok(Self::Production),
-            other => Err(format!(
+            other => Err(ParseEnvironmentError(format!(
                 "{} is not a supported environment. Use either `local` or `production`.",
                 other
-            )),
+            ))),
         }
     }
 }
