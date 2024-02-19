@@ -4,7 +4,6 @@ use once_cell::sync::Lazy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
-use serde_json::Value;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
@@ -38,10 +37,10 @@ pub struct TestApp {
 }
 
 impl TestApp {
-    pub async fn post_subscriptions(&self, body: &str) -> reqwest::Response {
+    pub async fn post_subscriptions(&self, body: serde_json::Value) -> reqwest::Response {
         reqwest::Client::new()
             .post(format!("{}/subscriptions", &self.addr))
-            .json(&serde_json::from_str::<Value>(body).unwrap())
+            .json(&body)
             .send()
             .await
             .expect("The request should succeed.")
