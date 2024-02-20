@@ -99,7 +99,7 @@ pub async fn spawn_app() -> TestApp {
         port: app.port(),
     };
 
-    let _ = tokio::spawn(async move {
+    tokio::spawn(async move {
         app.serve(connection_pool)
             .await
             .expect("The server should be running")
