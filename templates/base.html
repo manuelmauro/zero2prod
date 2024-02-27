@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script src="https://unpkg.com/htmx.org@1.9.6"
+        integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
+        crossorigin="anonymous"></script>
+    <script>
+        htmx.defineExtension('submitjson', {
+            onEvent: function (name, evt) {
+                if (name === "htmx:configRequest") {
+                    evt.detail.headers['Content-Type'] = "application/json";
+                }
+            },
+
+            encodeParameters: function (xhr, parameters, elt) {
+                xhr.overrideMimeType('text/json');
+                return (JSON.stringify(parameters));
+            }
+        });
+    </script>
+    <link rel="stylesheet" href="/styles.css" />
+    <title>
+        {% block title %}{{ title }} - My Site{% endblock %}
+    </title>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+    <div id="content">
+        {% block content %}<p>Placeholder content</p>{% endblock %}
+    </div>
+</body>
+
+</html>

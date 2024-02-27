@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Index{% endblock %}
+
+{% block content %}
+<form hx-target="#response" hx-post="/login" hx-headers='{"X-API-KEY": "xxxxxxx"}' hx-ext="submitjson">
+    <label>Username
+        <input type="text" placeholder="Enter Username" name="username" required>
+    </label>
+
+    <label>Password
+        <input type="password" placeholder="Enter Password" name="password" required>
+    </label>
+
+    <button type="submit">Login</button>
+</form>
+<div id="response"></div>
+
+{% endblock %}

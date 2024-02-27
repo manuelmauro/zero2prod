@@ -9,6 +9,8 @@ use crate::{config::Settings, email::EmailClient};
 
 mod error;
 mod health;
+mod home;
+mod login;
 mod newsletter;
 mod subscription;
 
@@ -23,6 +25,8 @@ fn app_router() -> Router<AppState> {
     health::router()
         .merge(subscription::router())
         .merge(newsletter::router())
+        .merge(home::router())
+        .merge(login::router())
 }
 
 pub struct App {
