@@ -2,6 +2,6 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct LoginRequestBody {
-    email: String,
+    username: String,
     password: String,
 }
