@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    http::{Response, StatusCode},
-    response::IntoResponse,
-};
+use axum::response::IntoResponse;
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -10,12 +7,4 @@ struct HomeTemplate;
 
 pub async fn home() -> impl IntoResponse {
     HomeTemplate
-}
-
-pub async fn styles() -> impl IntoResponse {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("Content-Type", "text/css")
-        .body(include_str!("../../../templates/styles.css").to_owned())
-        .unwrap()
 }

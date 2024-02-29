@@ -1,5 +1,15 @@
 use askama::Template;
-use axum::{http::StatusCode, response::IntoResponse};
+use axum::{
+    body::Body,
+    extract::State,
+    http::{HeaderValue, Response, StatusCode},
+    response::{IntoResponse, Redirect},
+    Json,
+};
+
+use crate::app::AppState;
+
+use super::schema;
 
 #[derive(Template)]
 #[template(path = "login.html")]
@@ -9,6 +19,14 @@ pub async fn login_form() -> impl IntoResponse {
     LoginTemplate
 }
 
-pub async fn login() -> impl IntoResponse {
-    StatusCode::OK
+#[tracing::instrument(name = "Login", skip(_state, _body))]
+pub async fn login(
+    State(_state): State<AppState>,
+    Json(_body): Json<schema::LoginRequestBody>,
+) -> impl IntoResponse {
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("HX-Redirect", "/")
+        .body(Body::empty())
+        .unwrap()
 }

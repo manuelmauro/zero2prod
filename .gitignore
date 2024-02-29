@@ -3,3 +3,6 @@
 
 # editor
 /.vscode
+
+# Dependency directories
+node_modules/

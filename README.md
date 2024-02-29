@@ -53,6 +53,34 @@ Use [`cargo-watch`](https://crates.io/crates/cargo-watch) for hot reloading the 
 cargo watch -x run
 ```
 
+### Preparing Tailwind CSS
+
+#### Install NodeJS
+
+Follow the documentation [here](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating)
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+```
+
+then install node with:
+
+```bash
+nvm install node
+```
+
+#### Install dependencies
+
+```bash
+npm run install
+```
+
+#### Build the project's CSS
+
+```bash
+npx tailwindcss -i ./input.css -o ./assets/output.css --watch
+```
+
 ## Quality Assurance
 
 ### Testing

@@ -7,6 +7,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::{config::Settings, email::EmailClient};
 
+mod asset;
 mod error;
 mod health;
 mod home;
@@ -27,6 +28,7 @@ fn app_router() -> Router<AppState> {
         .merge(newsletter::router())
         .merge(home::router())
         .merge(login::router())
+        .merge(asset::router())
 }
 
 pub struct App {

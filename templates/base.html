@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-white">
 
 <head>
     <script src="https://unpkg.com/htmx.org@1.9.6"
@@ -19,14 +19,14 @@
             }
         });
     </script>
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/assets/output.css" />
     <title>
         {% block title %}{{ title }} - My Site{% endblock %}
     </title>
     {% block head %}{% endblock %}
 </head>
 
-<body>
+<body class="h-full">
     <div id="content">
         {% block content %}<p>Placeholder content</p>{% endblock %}
     </div>
