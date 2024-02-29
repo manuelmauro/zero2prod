@@ -1,4 +1,7 @@
-use self::schema::{LoginUser, NewUser, User};
+use self::schema::{
+    CreateUserRequestBody, CreateUserResponseBody, LoginUserRequestBody, LoginUserResponseBody,
+    WhoamiResponseBody,
+};
 use self::utils::{hash_password, verify_password};
 use crate::app::extractor::AuthUser;
 use anyhow::Context;
@@ -19,11 +22,11 @@ pub(crate) fn router() -> Router<AppState> {
         .route("/whoami", get(get_current_user))
 }
 
-#[tracing::instrument(name = "Register new user", skip(state, body))]
+#[tracing::instrument(name = "Create new user", skip(state, body))]
 async fn create_user(
     State(state): State<AppState>,
-    Json(body): Json<NewUser>,
-) -> AppResult<Json<User>> {
+    Json(body): Json<CreateUserRequestBody>,
+) -> AppResult<Json<CreateUserResponseBody>> {
     let password_hash = hash_password(body.password).await?;
 
     let user_id = sqlx::query_scalar!(
@@ -36,17 +39,16 @@ async fn create_user(
     .await
     .context("User already exist.")?;
 
-    Ok(Json(User {
+    Ok(Json(CreateUserResponseBody {
         token: AuthUser { user_id }.to_jwt(&state),
-        username: body.username,
     }))
 }
 
 #[tracing::instrument(name = "Login", skip(state, body))]
 async fn login_user(
     State(state): State<AppState>,
-    Json(body): Json<LoginUser>,
-) -> AppResult<Json<User>> {
+    Json(body): Json<LoginUserRequestBody>,
+) -> AppResult<Json<LoginUserResponseBody>> {
     let user = sqlx::query!(
         r#"
             select user_id, username, password_hash 
@@ -60,12 +62,11 @@ async fn login_user(
 
     verify_password(body.password, user.password_hash).await?;
 
-    Ok(Json(User {
+    Ok(Json(LoginUserResponseBody {
         token: AuthUser {
             user_id: user.user_id,
         }
         .to_jwt(&state),
-        username: user.username,
     }))
 }
 
@@ -73,7 +74,7 @@ async fn login_user(
 async fn get_current_user(
     auth_user: AuthUser,
     State(state): State<AppState>,
-) -> AppResult<Json<User>> {
+) -> AppResult<Json<WhoamiResponseBody>> {
     let user = sqlx::query!(
         r#"select username from "users" where user_id = $1"#,
         auth_user.user_id
@@ -82,8 +83,7 @@ async fn get_current_user(
     .await
     .context("Cannot find user.")?;
 
-    Ok(Json(User {
-        token: auth_user.to_jwt(&state),
+    Ok(Json(WhoamiResponseBody {
         username: user.username,
     }))
 }
