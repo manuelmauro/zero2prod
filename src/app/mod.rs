@@ -8,14 +8,12 @@ use tower_http::trace::TraceLayer;
 
 use crate::{config::Settings, email::EmailClient};
 
-mod asset;
 mod error;
 mod extractor;
 mod health;
-mod home;
-mod login;
 mod newsletter;
 mod subscription;
+mod ui;
 mod user;
 
 #[derive(Clone)]
@@ -27,13 +25,13 @@ pub struct AppState {
 }
 
 fn app_router() -> Router<AppState> {
-    health::router()
-        .merge(subscription::router())
-        .merge(newsletter::router())
-        .merge(home::router())
-        .merge(login::router())
-        .merge(asset::router())
-        .merge(user::router())
+    ui::router().nest(
+        "/api/v1",
+        health::router()
+            .merge(subscription::router())
+            .merge(newsletter::router())
+            .merge(user::router()),
+    )
 }
 
 pub struct App {
