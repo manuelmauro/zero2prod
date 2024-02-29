@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.79"
-argon2 = "0.5.3"
+argon2 = { version = "0.5.3", features = ["std"] }
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
 async-trait = "0.1.77"
