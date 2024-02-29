@@ -4,5 +4,8 @@
 # editor
 /.vscode
 
+# OS
+.DS_Store
+
 # Dependency directories
 node_modules/
