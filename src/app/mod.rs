@@ -1,6 +1,7 @@
 use std::{io, net::IpAddr};
 
 use axum::{http::Request, Router};
+use secrecy::Secret;
 use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
@@ -9,17 +10,20 @@ use crate::{config::Settings, email::EmailClient};
 
 mod asset;
 mod error;
+mod extractor;
 mod health;
 mod home;
 mod login;
 mod newsletter;
 mod subscription;
+mod user;
 
 #[derive(Clone)]
 pub struct AppState {
     db: PgPool,
     email_client: EmailClient,
     base_url: String,
+    hmac_key: Secret<String>,
 }
 
 fn app_router() -> Router<AppState> {
@@ -29,12 +33,14 @@ fn app_router() -> Router<AppState> {
         .merge(home::router())
         .merge(login::router())
         .merge(asset::router())
+        .merge(user::router())
 }
 
 pub struct App {
     listener: TcpListener,
     email_client: EmailClient,
     base_url: String,
+    hmac_key: Secret<String>,
 }
 
 impl App {
@@ -63,6 +69,7 @@ impl App {
             listener,
             email_client,
             base_url: config.application.base_url,
+            hmac_key: config.application.hmac_key,
         }
     }
 
@@ -80,6 +87,7 @@ impl App {
                 db,
                 email_client: self.email_client,
                 base_url: self.base_url,
+                hmac_key: self.hmac_key,
             })
             .layer(
                 TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {

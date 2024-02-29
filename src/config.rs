@@ -17,6 +17,7 @@ pub struct ApplicationSettings {
     pub port: u16,
     pub base_url: String,
     pub log_level: String,
+    pub hmac_key: Secret<String>,
 }
 
 #[derive(Deserialize)]
