@@ -2,8 +2,8 @@ use askama::Template;
 use axum::{
     body::Body,
     extract::State,
-    http::{HeaderValue, Response, StatusCode},
-    response::{IntoResponse, Redirect},
+    http::{Response, StatusCode},
+    response::IntoResponse,
     Json,
 };
 
