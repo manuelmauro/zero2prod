@@ -7,9 +7,8 @@ use axum::{
     Json,
 };
 
-use crate::app::AppState;
-
 use super::schema;
+use crate::app::AppState;
 
 #[derive(Template)]
 #[template(path = "login.html")]
