@@ -55,18 +55,12 @@ cargo watch -x run
 
 ### Preparing Tailwind CSS
 
-#### Install NodeJS
+#### Install NodeJS using Volta
 
-Follow the documentation [here](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating)
-
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-```
-
-then install node with:
+Follow the documentation [here](https://volta.sh/)
 
 ```bash
-nvm install node
+curl https://get.volta.sh | bash
 ```
 
 #### Install dependencies
