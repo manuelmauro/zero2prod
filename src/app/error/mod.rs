@@ -20,6 +20,8 @@ pub type AppResult<T, E = AppError> = result::Result<T, E>;
 pub enum AppError {
     #[error("{0}")]
     ValidationError(String),
+    #[error("{0}")]
+    AuthorizationError(String),
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -28,6 +30,7 @@ impl AppError {
     fn status_code(&self) -> StatusCode {
         match self {
             Self::ValidationError(_) => StatusCode::BAD_REQUEST,
+            Self::AuthorizationError(_) => StatusCode::UNAUTHORIZED,
             Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -41,18 +44,6 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
-            Self::ValidationError(ref s) => {
-                tracing::error!("{:?}", s);
-                (
-                    self.status_code(),
-                    Json(schema::Error {
-                        code: 0,
-                        message: s.to_owned(),
-                        details: None,
-                    }),
-                )
-                    .into_response()
-            }
             Self::UnexpectedError(ref e) => {
                 tracing::error!("{:?}", e);
                 (
@@ -64,6 +55,10 @@ impl IntoResponse for AppError {
                     }),
                 )
                     .into_response()
+            }
+            ref e => {
+                tracing::error!("{}", e);
+                (self.status_code(), ()).into_response()
             }
         }
     }

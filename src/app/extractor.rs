@@ -94,10 +94,14 @@ where
             .expect("BUG: AppState should be added as an extension");
 
         // Get the value of the `Authorization` header, if it was sent at all.
-        let auth_header = parts.headers.get(AUTHORIZATION).context("")?;
+        let auth_header = parts
+            .headers
+            .get(AUTHORIZATION)
+            .ok_or(AppError::AuthorizationError(
+                "Missing Authorization header.".to_owned(),
+            ))?;
 
-        Self::from_authorization(&state, auth_header).map_err(|_e| {
-            AppError::UnexpectedError(anyhow!("Failed to parse Authorization header"))
-        })
+        Self::from_authorization(&state, auth_header)
+            .map_err(|_| AppError::AuthorizationError("Invalid Authorization header.".to_owned()))
     }
 }
