@@ -2,9 +2,9 @@ use super::AppState;
 use axum::routing::{get, post};
 use axum::Router;
 
+pub mod auth;
 pub mod route;
 pub mod schema;
-pub mod utils;
 
 pub(crate) fn router() -> Router<AppState> {
     Router::new()

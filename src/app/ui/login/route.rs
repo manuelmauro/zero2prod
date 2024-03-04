@@ -10,7 +10,7 @@ use secrecy::Secret;
 
 use super::schema;
 use crate::app::{
-    user::utils::{validate_credentials, Credentials},
+    user::auth::{validate_credentials, Credentials},
     AppState,
 };
 

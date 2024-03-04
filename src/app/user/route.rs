@@ -3,11 +3,11 @@ use axum::extract::State;
 use axum::Json;
 use secrecy::{ExposeSecret, Secret};
 
+use super::auth::{compute_password_hash, validate_credentials, Credentials};
 use super::schema::{
     CreateUserRequestBody, CreateUserResponseBody, LoginUserRequestBody, LoginUserResponseBody,
     WhoamiResponseBody,
 };
-use super::utils::{compute_password_hash, validate_credentials, Credentials};
 use super::AppState;
 use crate::app::error::{AppError, AppResult};
 use crate::app::extractor::AuthUser;
