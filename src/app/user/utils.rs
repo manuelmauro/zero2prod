@@ -59,51 +59,52 @@ pub async fn validate_credentials(
         expected_password_hash = stored_password_hash;
     }
 
-    verify_password_hash(expected_password_hash, credentials.password).await?;
+    spawn_blocking_with_tracing(move || {
+        verify_password_hash(expected_password_hash, credentials.password)
+    })
+    .await
+    .context("Could not verify password hash.")??;
 
     user_id
         .ok_or_else(|| anyhow::anyhow!("Unknown username."))
         .map_err(AuthError::InvalidCredentials)
 }
 
+/// Verifies that the password candidate matches the expected password hash.
+///
+/// *Expensive computation*: should be run in a blocking task.
 #[tracing::instrument(
     name = "Validate credentials",
     skip(expected_password_hash, password_candidate)
 )]
-async fn verify_password_hash(
+fn verify_password_hash(
     expected_password_hash: Secret<String>,
     password_candidate: Secret<String>,
 ) -> Result<(), AuthError> {
-    spawn_blocking_with_tracing(move || {
-        let expected_password_hash = PasswordHash::new(expected_password_hash.expose_secret())
-            .context("Failed to parse hash in PHC string format.")?;
+    let expected_password_hash = PasswordHash::new(expected_password_hash.expose_secret())
+        .context("Failed to parse hash in PHC string format.")?;
 
-        Argon2::default()
-            .verify_password(
-                password_candidate.expose_secret().as_bytes(),
-                &expected_password_hash,
-            )
-            .context("Invalid password.")
-            .map_err(AuthError::InvalidCredentials)
-    })
-    .await
-    .context("Failed to spawn blocking task.")?
+    Argon2::default()
+        .verify_password(
+            password_candidate.expose_secret().as_bytes(),
+            &expected_password_hash,
+        )
+        .context("Invalid password.")
+        .map_err(AuthError::InvalidCredentials)
 }
 
-pub async fn compute_password_hash(
-    password: Secret<String>,
-) -> Result<Secret<String>, anyhow::Error> {
-    spawn_blocking_with_tracing(move || {
-        let salt = SaltString::generate(&mut rand::thread_rng());
-        let password_hash = Argon2::new(
-            Algorithm::Argon2id,
-            Version::V0x13,
-            Params::new(15000, 2, 1, None).unwrap(),
-        )
-        .hash_password(password.expose_secret().as_bytes(), &salt)?
-        .to_string();
-        Ok(Secret::new(password_hash))
-    })
-    .await
-    .context("Could not generate password hash")?
+/// Computes the password hash using the Argon2id algorithm.
+///
+/// *Expensive computation*: should be run in a blocking task.
+pub fn compute_password_hash(password: Secret<String>) -> Result<Secret<String>, anyhow::Error> {
+    let salt = SaltString::generate(&mut rand::thread_rng());
+    let password_hash = Argon2::new(
+        Algorithm::Argon2id,
+        Version::V0x13,
+        Params::new(15000, 2, 1, None).unwrap(),
+    )
+    .hash_password(password.expose_secret().as_bytes(), &salt)?
+    .to_string();
+
+    Ok(Secret::new(password_hash))
 }

@@ -11,13 +11,17 @@ use super::utils::{compute_password_hash, validate_credentials, Credentials};
 use super::AppState;
 use crate::app::error::{AppError, AppResult};
 use crate::app::extractor::AuthUser;
+use crate::telemetry::spawn_blocking_with_tracing;
 
 #[tracing::instrument(name = "Create new user", skip(state, body))]
 pub async fn create_user(
     State(state): State<AppState>,
     Json(body): Json<CreateUserRequestBody>,
 ) -> AppResult<Json<CreateUserResponseBody>> {
-    let password_hash = compute_password_hash(Secret::new(body.password)).await?;
+    let password_hash =
+        spawn_blocking_with_tracing(move || compute_password_hash(Secret::new(body.password)))
+            .await
+            .context("Could not compute password hash.")??;
 
     let user_id = sqlx::query_scalar!(
         r#"insert into "users" (user_id, username, password_hash) values ($1, $2, $3) returning user_id"#,
