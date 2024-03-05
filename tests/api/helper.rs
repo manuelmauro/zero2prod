@@ -32,14 +32,23 @@ pub struct ConfirmationLinks {
 pub struct TestApp {
     pub addr: String,
     pub db_pool: PgPool,
+    pub http_client: ClientWithMiddleware,
     pub email_server: MockServer,
     pub port: u16,
 }
 
 impl TestApp {
+    pub async fn health_check(&self) -> reqwest::Response {
+        self.http_client
+            .get(&format!("{}/api/v1/health_check", &self.addr))
+            .send()
+            .await
+            .expect("The request should succeed.")
+    }
+
     pub async fn post_subscriptions(&self, body: serde_json::Value) -> reqwest::Response {
-        reqwest::Client::new()
-            .post(format!("{}/subscriptions", &self.addr))
+        self.http_client
+            .post(format!("{}/api/v1/subscriptions", &self.addr))
             .json(&body)
             .send()
             .await
@@ -47,8 +56,8 @@ impl TestApp {
     }
 
     pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
-        reqwest::Client::new()
-            .post(&format!("{}/newsletters", &self.addr))
+        self.http_client
+            .post(&format!("{}/api/v1/newsletters", &self.addr))
             .json(&body)
             .send()
             .await
@@ -89,12 +98,19 @@ pub async fn spawn_app() -> TestApp {
     config.database.database_name = Uuid::new_v4().to_string();
     config.email_client.base_url = email_server.uri();
 
+    let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
+    let http_client = ClientBuilder::new(reqwest::Client::new())
+        .with(TracingMiddleware::default())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+
     let connection_pool = configure_database(&config.database).await;
     let app = App::with(config).await;
 
     let test_app = TestApp {
         addr: format!("http://127.0.0.1:{}", app.port()),
         db_pool: connection_pool.clone(),
+        http_client,
         email_server,
         port: app.port(),
     };
@@ -130,13 +146,4 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("The migrations should run without error.");
 
     connection_pool
-}
-
-pub fn get_client() -> ClientWithMiddleware {
-    let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
-
-    ClientBuilder::new(reqwest::Client::new())
-        .with(TracingMiddleware::default())
-        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-        .build()
 }
