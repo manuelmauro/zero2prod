@@ -61,7 +61,7 @@ impl TestApp {
             .json(&body)
             .send()
             .await
-            .expect("Failed to execute request.")
+            .expect("The request should succed.")
     }
 
     /// Extract the confirmation links embedded in the request to the email API.
