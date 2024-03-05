@@ -1,10 +1,12 @@
 use askama::Template;
 use axum::response::IntoResponse;
 
+use crate::app::extractor::AuthUser;
+
 #[derive(Template)]
 #[template(path = "index.html")]
-struct HomeTemplate;
+struct AdminDashboardTemplate;
 
-pub async fn home() -> impl IntoResponse {
-    HomeTemplate
+pub async fn admin_dashboard(_user: AuthUser) -> impl IntoResponse {
+    AdminDashboardTemplate
 }

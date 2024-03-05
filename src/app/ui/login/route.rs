@@ -46,7 +46,7 @@ pub async fn login(
             tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
             Response::builder()
                 .status(StatusCode::OK)
-                .header("HX-Redirect", "/")
+                .header("HX-Redirect", "/admin/dashboard")
                 .body(Body::empty())
                 .unwrap()
         }
