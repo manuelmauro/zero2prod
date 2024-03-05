@@ -55,7 +55,7 @@ pub async fn login_user(
                 token: AuthUser { user_id }.to_jwt(&state),
             }))
         }
-        Err(e) => Err(AppError::UnexpectedError(e.into())),
+        Err(e) => Err(AppError::Unexpected(e.into())),
     }
 }
 

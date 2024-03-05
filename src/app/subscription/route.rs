@@ -20,7 +20,7 @@ pub async fn subscribe(
     State(state): State<AppState>,
     Json(body): Json<schema::SubscribeBody>,
 ) -> AppResult<StatusCode> {
-    let new_subscriber = NewSubscriber::try_from(body).map_err(AppError::ValidationError)?;
+    let new_subscriber = NewSubscriber::try_from(body).map_err(AppError::Validation)?;
 
     let mut transaction = state
         .db

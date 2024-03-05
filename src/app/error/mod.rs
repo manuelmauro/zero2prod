@@ -19,19 +19,19 @@ pub type AppResult<T, E = AppError> = result::Result<T, E>;
 #[derive(thiserror::Error, Debug)]
 pub enum AppError {
     #[error("{0}")]
-    ValidationError(String),
+    Validation(String),
     #[error("{0}")]
-    AuthorizationError(String),
+    Authorization(String),
     #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
+    Unexpected(#[from] anyhow::Error),
 }
 
 impl AppError {
     fn status_code(&self) -> StatusCode {
         match self {
-            Self::ValidationError(_) => StatusCode::BAD_REQUEST,
-            Self::AuthorizationError(_) => StatusCode::UNAUTHORIZED,
-            Self::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::Validation(_) => StatusCode::BAD_REQUEST,
+            Self::Authorization(_) => StatusCode::UNAUTHORIZED,
+            Self::Unexpected(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -44,7 +44,7 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
-            Self::UnexpectedError(ref e) => {
+            Self::Unexpected(ref e) => {
                 tracing::error!("{:?}", e);
                 (
                     self.status_code(),

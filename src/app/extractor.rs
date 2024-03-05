@@ -97,11 +97,11 @@ where
         let auth_header = parts
             .headers
             .get(AUTHORIZATION)
-            .ok_or(AppError::AuthorizationError(
+            .ok_or(AppError::Authorization(
                 "Missing Authorization header.".to_owned(),
             ))?;
 
         Self::from_authorization(&state, auth_header)
-            .map_err(|_| AppError::AuthorizationError("Invalid Authorization header.".to_owned()))
+            .map_err(|_| AppError::Authorization("Invalid Authorization header.".to_owned()))
     }
 }
