@@ -21,7 +21,7 @@ services:
         value: ${APP_URL}
       - key: APP_APPLICATION__HMAC_KEY
         scope: RUN_TIME
-        value: ${newsletter.HMAC_KEY}
+        value: ${HMAC_KEY}
       - key: APP_DATABASE__USERNAME
         scope: RUN_TIME
         value: ${newsletter.USERNAME}
