@@ -2,7 +2,7 @@ use std::{io, net::IpAddr};
 
 use axum::{extract::FromRef, http::Request, Router};
 use axum_extra::extract::cookie::Key;
-use secrecy::Secret;
+use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
@@ -24,12 +24,11 @@ pub struct AppState {
     email_client: EmailClient,
     base_url: String,
     hmac_key: Secret<String>,
-    cookie_key: Key,
 }
 
 impl FromRef<AppState> for Key {
     fn from_ref(state: &AppState) -> Self {
-        state.cookie_key.clone()
+        Key::from(state.hmac_key.expose_secret().as_bytes())
     }
 }
 
@@ -94,9 +93,7 @@ impl App {
                 db,
                 email_client: self.email_client,
                 base_url: self.base_url,
-                hmac_key: self.hmac_key,
-                // TODO add to configuration
-                cookie_key: Key::generate(),
+                hmac_key: self.hmac_key.clone(),
             })
             .layer(
                 TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
