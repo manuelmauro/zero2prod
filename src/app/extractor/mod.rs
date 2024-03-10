@@ -1,2 +1,2 @@
-pub mod authentication_header;
+pub mod authorization_header;
 pub mod session_cookie;
