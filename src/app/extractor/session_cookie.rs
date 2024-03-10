@@ -83,17 +83,9 @@ where
 
         let token = cookie_jar
             .get("session")
-            .ok_or_else(|| {
-                axum::response::Response::builder()
-                    .status(401)
-                    .body(Body::empty())
-                    .unwrap()
-            })
-            .unwrap();
-
-        tracing::debug!("{:?}", token);
+            .ok_or_else(|| AppError::Authorization("Missing session cookie".to_owned()))?;
 
         Self::from_str(&state, token.value_trimmed())
-            .map_err(|_| AppError::Authorization("Invalid Authorization header.".to_owned()))
+            .map_err(|_| AppError::Authorization("Invalid token.".to_owned()))
     }
 }

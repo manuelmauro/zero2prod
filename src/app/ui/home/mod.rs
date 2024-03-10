@@ -4,5 +4,5 @@ use axum::{routing::get, Router};
 pub mod route;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/app", get(route::admin_dashboard))
+    Router::new().route("/", get(route::home_page))
 }

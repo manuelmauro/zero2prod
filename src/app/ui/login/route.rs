@@ -53,7 +53,7 @@ pub async fn login(
                 updated_jar,
                 Response::builder()
                     .status(StatusCode::OK)
-                    .header("HX-Redirect", "/admin/dashboard")
+                    .header("HX-Redirect", "/app")
                     .body(Body::empty())
                     .unwrap(),
             )

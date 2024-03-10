@@ -9,6 +9,8 @@ use tower_http::trace::TraceLayer;
 
 use crate::{config::Settings, email::EmailClient};
 
+use self::ui::not_found::not_found_page;
+
 mod api;
 mod error;
 mod extractor;
@@ -106,6 +108,8 @@ impl App {
                     )
                 }),
             );
+
+        let app = app.fallback(not_found_page);
 
         axum::serve(self.listener, app.into_make_service()).await
     }
