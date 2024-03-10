@@ -6,10 +6,12 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
 use secrecy::Secret;
 
 use super::schema;
 use crate::app::{
+    api::token::ApiToken,
     user::auth::{validate_credentials, Credentials},
     AppState,
 };
@@ -22,19 +24,21 @@ struct LoginTemplate;
 #[template(path = "incorrect_username_or_password.html")]
 struct IncorrectUsernameOrPasswordTemplate;
 
+#[tracing::instrument(name = "Login form")]
 pub async fn login_form() -> impl IntoResponse {
     LoginTemplate
 }
 
 #[tracing::instrument(
     name = "Login",
-    skip(state, body),
+    skip(jar, state, body),
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
 pub async fn login(
+    jar: PrivateCookieJar,
     State(state): State<AppState>,
     Json(body): Json<schema::LoginRequestBody>,
-) -> impl IntoResponse {
+) -> (PrivateCookieJar, impl IntoResponse) {
     let credentials = Credentials {
         username: body.username,
         password: Secret::new(body.password),
@@ -43,18 +47,25 @@ pub async fn login(
 
     match validate_credentials(credentials, &state.db).await {
         Ok(user_id) => {
+            let updated_jar = jar.add(Cookie::new("session", ApiToken { user_id }.to_jwt(&state)));
             tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
+            (
+                updated_jar,
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .header("HX-Redirect", "/admin/dashboard")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+        }
+        Err(_) => (
+            jar,
             Response::builder()
                 .status(StatusCode::OK)
-                .header("HX-Redirect", "/admin/dashboard")
-                .body(Body::empty())
-                .unwrap()
-        }
-        Err(_) => Response::builder()
-            .status(StatusCode::OK)
-            .body(Body::from(
-                IncorrectUsernameOrPasswordTemplate.render().unwrap(),
-            ))
-            .unwrap(),
+                .body(Body::from(
+                    IncorrectUsernameOrPasswordTemplate.render().unwrap(),
+                ))
+                .unwrap(),
+        ),
     }
 }

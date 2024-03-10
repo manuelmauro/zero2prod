@@ -9,8 +9,8 @@ use super::schema::{
     WhoamiResponseBody,
 };
 use super::AppState;
+use crate::app::api::token::ApiToken;
 use crate::app::error::{AppError, AppResult};
-use crate::app::extractor::AuthUser;
 use crate::telemetry::spawn_blocking_with_tracing;
 
 #[tracing::instrument(name = "Create new user", skip(state, body))]
@@ -34,7 +34,7 @@ pub async fn create_user(
     .context("User already exist.")?;
 
     Ok(Json(CreateUserResponseBody {
-        token: AuthUser { user_id }.to_jwt(&state),
+        token: ApiToken { user_id }.to_jwt(&state),
     }))
 }
 
@@ -52,21 +52,21 @@ pub async fn login_user(
         Ok(user_id) => {
             tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
             Ok(Json(LoginUserResponseBody {
-                token: AuthUser { user_id }.to_jwt(&state),
+                token: ApiToken { user_id }.to_jwt(&state),
             }))
         }
         Err(e) => Err(AppError::Unexpected(e.into())),
     }
 }
 
-#[tracing::instrument(name = "Whoami", skip(auth_user, state))]
+#[tracing::instrument(name = "Whoami", skip(token, state))]
 pub async fn get_current_user(
-    auth_user: AuthUser,
+    token: ApiToken,
     State(state): State<AppState>,
 ) -> AppResult<Json<WhoamiResponseBody>> {
     let user = sqlx::query!(
         r#"select username from "users" where user_id = $1"#,
-        auth_user.user_id
+        token.user_id
     )
     .fetch_one(&state.db)
     .await

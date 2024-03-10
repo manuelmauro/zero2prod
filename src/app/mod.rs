@@ -1,6 +1,7 @@
 use std::{io, net::IpAddr};
 
-use axum::{http::Request, Router};
+use axum::{extract::FromRef, http::Request, Router};
+use axum_extra::extract::cookie::Key;
 use secrecy::Secret;
 use sqlx::PgPool;
 use tokio::net::TcpListener;
@@ -8,6 +9,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::{config::Settings, email::EmailClient};
 
+mod api;
 mod error;
 mod extractor;
 mod health;
@@ -22,6 +24,13 @@ pub struct AppState {
     email_client: EmailClient,
     base_url: String,
     hmac_key: Secret<String>,
+    cookie_key: Key,
+}
+
+impl FromRef<AppState> for Key {
+    fn from_ref(state: &AppState) -> Self {
+        state.cookie_key.clone()
+    }
 }
 
 fn app_router() -> Router<AppState> {
@@ -86,6 +95,8 @@ impl App {
                 email_client: self.email_client,
                 base_url: self.base_url,
                 hmac_key: self.hmac_key,
+                // TODO add to configuration
+                cookie_key: Key::generate(),
             })
             .layer(
                 TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
