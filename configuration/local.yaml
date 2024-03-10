@@ -2,6 +2,6 @@ application:
   host: "127.0.0.1"
   base_url: "http://127.0.0.1"
   log_level: "zero2prod=trace,sqlx=trace,tower_http=trace,axum::rejection=trace"
-  hmac_key: "secret"
+  hmac_key: "uATGLd55VMYUxjjbacaGEyshoZQSraDBB59YtUDFzjeZjENGQb3XLsBHEVCns7UM"
 database:
   require_ssl: false
