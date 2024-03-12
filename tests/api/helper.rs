@@ -1,9 +1,11 @@
 use std::{env, io};
 
+use bb8_redis::RedisConnectionManager;
 use once_cell::sync::Lazy;
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use reqwest_tracing::TracingMiddleware;
+use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use tracing_subscriber::util::SubscriberInitExt;
 use uuid::Uuid;
@@ -104,19 +106,20 @@ pub async fn spawn_app() -> TestApp {
         .with(RetryTransientMiddleware::new_with_policy(retry_policy))
         .build();
 
-    let connection_pool = configure_database(&config.database).await;
+    let db = configure_database(&config.database).await;
+    let cache = configure_cache(&config.redis_uri.expose_secret()).await;
     let app = App::with(config).await;
 
     let test_app = TestApp {
         addr: format!("http://127.0.0.1:{}", app.port()),
-        db_pool: connection_pool.clone(),
+        db_pool: db.clone(),
         http_client,
         email_server,
         port: app.port(),
     };
 
     tokio::spawn(async move {
-        app.serve(connection_pool)
+        app.serve(db, cache)
             .await
             .expect("The server should be running")
     });
@@ -146,4 +149,11 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("The migrations should run without error.");
 
     connection_pool
+}
+
+async fn configure_cache(redis_uri: &str) -> bb8::Pool<RedisConnectionManager> {
+    let manager =
+        bb8_redis::RedisConnectionManager::new(redis_uri).expect("redis uri should be valid");
+
+    bb8::Pool::builder().build(manager).await.unwrap()
 }

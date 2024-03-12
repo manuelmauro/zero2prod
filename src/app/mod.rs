@@ -2,6 +2,8 @@ use std::{io, net::IpAddr};
 
 use axum::{extract::FromRef, http::Request, Router};
 use axum_extra::extract::cookie::Key;
+use bb8::Pool;
+use bb8_redis::RedisConnectionManager;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
 use tokio::net::TcpListener;
@@ -23,6 +25,7 @@ mod user;
 #[derive(Clone)]
 pub struct AppState {
     db: PgPool,
+    cache: Pool<RedisConnectionManager>,
     email_client: EmailClient,
     base_url: String,
     hmac_key: Secret<String>,
@@ -89,10 +92,15 @@ impl App {
         self.listener.local_addr().unwrap().port()
     }
 
-    pub async fn serve(self, db: PgPool) -> Result<(), io::Error> {
+    pub async fn serve(
+        self,
+        db: PgPool,
+        cache: Pool<RedisConnectionManager>,
+    ) -> Result<(), io::Error> {
         let app = app_router()
             .with_state(AppState {
                 db,
+                cache,
                 email_client: self.email_client,
                 base_url: self.base_url,
                 hmac_key: self.hmac_key.clone(),
