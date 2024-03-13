@@ -6,16 +6,19 @@ use bb8::Pool;
 use bb8_redis::RedisConnectionManager;
 use secrecy::{ExposeSecret, Secret};
 use sqlx::PgPool;
+use time::Duration;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
+use tower_sessions::{Expiry, SessionManagerLayer};
 
 use crate::{config::Settings, email::EmailClient};
 
-use self::ui::not_found::not_found_page;
+use self::{session_store::RedisStore, ui::not_found::not_found_page};
 
 mod api;
 mod error;
 mod extractor;
+mod session_store;
 mod ui;
 
 #[derive(Clone)]
@@ -93,6 +96,22 @@ impl App {
         db: PgPool,
         cache: Pool<RedisConnectionManager>,
     ) -> Result<(), io::Error> {
+        let trace_layer = TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+            let id = uuid::Uuid::new_v4();
+            tracing::info_span!(
+                "request",
+                method = ?request.method(),
+                uri = ?request.uri(),
+                %id,
+            )
+        });
+
+        let session_store = RedisStore::new(cache.clone());
+        let session_layer = SessionManagerLayer::new(session_store)
+            // TODO use config for secure flag
+            .with_secure(false)
+            .with_expiry(Expiry::OnInactivity(Duration::minutes(10)));
+
         let app = app_router()
             .with_state(AppState {
                 db,
@@ -101,17 +120,8 @@ impl App {
                 base_url: self.base_url,
                 hmac_key: self.hmac_key.clone(),
             })
-            .layer(
-                TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
-                    let id = uuid::Uuid::new_v4();
-                    tracing::info_span!(
-                        "request",
-                        method = ?request.method(),
-                        uri = ?request.uri(),
-                        %id,
-                    )
-                }),
-            );
+            .layer(session_layer)
+            .layer(trace_layer);
 
         let app = app.fallback(not_found_page);
 
