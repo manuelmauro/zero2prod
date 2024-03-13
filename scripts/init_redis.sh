@@ -17,4 +17,4 @@ docker run \
     --name "redis_$(date '+%s')" \
     redis:7
 
->&2 echo "Redis is ready to go!”
+>&2 echo "Redis is ready to go!"
