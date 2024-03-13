@@ -16,16 +16,12 @@ use self::ui::not_found::not_found_page;
 mod api;
 mod error;
 mod extractor;
-mod health;
-mod newsletter;
-mod subscription;
 mod ui;
-mod user;
 
 #[derive(Clone)]
 pub struct AppState {
     db: PgPool,
-    cache: Pool<RedisConnectionManager>,
+    _cache: Pool<RedisConnectionManager>,
     email_client: EmailClient,
     base_url: String,
     hmac_key: Secret<String>,
@@ -40,10 +36,10 @@ impl FromRef<AppState> for Key {
 fn app_router() -> Router<AppState> {
     ui::router().nest(
         "/api/v1",
-        health::router()
-            .merge(subscription::router())
-            .merge(newsletter::router())
-            .merge(user::router()),
+        api::health::router()
+            .merge(api::subscription::router())
+            .merge(api::newsletter::router())
+            .merge(api::user::router()),
     )
 }
 
@@ -100,7 +96,7 @@ impl App {
         let app = app_router()
             .with_state(AppState {
                 db,
-                cache,
+                _cache: cache,
                 email_client: self.email_client,
                 base_url: self.base_url,
                 hmac_key: self.hmac_key.clone(),

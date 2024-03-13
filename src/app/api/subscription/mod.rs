@@ -1,4 +1,4 @@
-use super::AppState;
+use crate::app::AppState;
 use axum::{
     routing::{get, post},
     Router,

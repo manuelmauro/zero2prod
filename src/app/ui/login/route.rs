@@ -11,8 +11,8 @@ use secrecy::Secret;
 
 use super::schema;
 use crate::app::{
-    api::token::ApiToken,
-    user::auth::{validate_credentials, Credentials},
+    api::user::auth::{validate_credentials, Credentials},
+    extractor::authorization_header::ApiToken,
     AppState,
 };
 

@@ -1,6 +1,6 @@
 use axum::{routing::get, Router};
 
-use super::AppState;
+use crate::app::AppState;
 
 pub mod route;
 

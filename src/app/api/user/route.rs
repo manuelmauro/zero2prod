@@ -9,8 +9,8 @@ use super::schema::{
     WhoamiResponseBody,
 };
 use super::AppState;
-use crate::app::api::token::ApiToken;
 use crate::app::error::{AppError, AppResult};
+use crate::app::extractor::authorization_header::ApiToken;
 use crate::telemetry::spawn_blocking_with_tracing;
 
 #[tracing::instrument(name = "Create new user", skip(state, body))]
