@@ -11,4 +11,5 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/login", get(route::login_form))
         .route("/login", post(route::login))
+        .route("/logout", get(route::logout))
 }
