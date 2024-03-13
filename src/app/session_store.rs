@@ -43,7 +43,7 @@ impl RedisStore<bb8::Pool<RedisConnectionManager>> {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// })
+    ///
     /// ```
     pub fn new(client: bb8::Pool<RedisConnectionManager>) -> Self {
         Self { client }
