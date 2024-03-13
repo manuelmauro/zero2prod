@@ -78,8 +78,7 @@ pub async fn login(
 
 #[tracing::instrument(name = "Logout", skip(session))]
 pub async fn logout(session: Session) -> impl IntoResponse {
-    session.clear().await;
-    session.save().await.unwrap();
+    session.delete().await.unwrap();
 
     Redirect::temporary("/").into_response()
 }
