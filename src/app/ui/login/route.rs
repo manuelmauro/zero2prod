@@ -3,7 +3,7 @@ use axum::{
     body::Body,
     extract::State,
     http::{Response, StatusCode},
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
     Json,
 };
 use secrecy::Secret;
@@ -12,6 +12,7 @@ use tower_sessions::Session;
 use super::schema;
 use crate::app::{
     api::user::auth::{validate_credentials, Credentials},
+    extractor::session_user::SessionUser,
     AppState,
 };
 
@@ -24,8 +25,16 @@ struct LoginTemplate;
 struct IncorrectUsernameOrPasswordTemplate;
 
 #[tracing::instrument(name = "Login form")]
-pub async fn login_form() -> impl IntoResponse {
-    LoginTemplate
+pub async fn login_form(session: Option<SessionUser>) -> impl IntoResponse {
+    if let Some(user) = session {
+        tracing::Span::current().record("user_id", &tracing::field::display(&user.id));
+        return Redirect::temporary("/app").into_response();
+    }
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .body(Body::from(LoginTemplate.render().unwrap()))
+        .unwrap()
 }
 
 #[tracing::instrument(
