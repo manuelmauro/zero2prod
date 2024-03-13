@@ -6,13 +6,12 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use axum_extra::extract::{cookie::Cookie, PrivateCookieJar};
 use secrecy::Secret;
+use tower_sessions::Session;
 
 use super::schema;
 use crate::app::{
     api::user::auth::{validate_credentials, Credentials},
-    extractor::authorization_header::ApiToken,
     AppState,
 };
 
@@ -31,14 +30,14 @@ pub async fn login_form() -> impl IntoResponse {
 
 #[tracing::instrument(
     name = "Login",
-    skip(jar, state, body),
+    skip(session, state, body),
     fields(username=tracing::field::Empty, user_id=tracing::field::Empty)
 )]
 pub async fn login(
-    jar: PrivateCookieJar,
+    session: Session,
     State(state): State<AppState>,
     Json(body): Json<schema::LoginRequestBody>,
-) -> (PrivateCookieJar, impl IntoResponse) {
+) -> impl IntoResponse {
     let credentials = Credentials {
         username: body.username,
         password: Secret::new(body.password),
@@ -47,25 +46,23 @@ pub async fn login(
 
     match validate_credentials(credentials, &state.db).await {
         Ok(user_id) => {
-            let updated_jar = jar.add(Cookie::new("session", ApiToken { user_id }.to_jwt(&state)));
+            session.insert("user_id", user_id).await.unwrap();
+            session.cycle_id().await.unwrap();
+            session.save().await.unwrap();
+
             tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
-            (
-                updated_jar,
-                Response::builder()
-                    .status(StatusCode::OK)
-                    .header("HX-Redirect", "/app")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-        }
-        Err(_) => (
-            jar,
+
             Response::builder()
                 .status(StatusCode::OK)
-                .body(Body::from(
-                    IncorrectUsernameOrPasswordTemplate.render().unwrap(),
-                ))
-                .unwrap(),
-        ),
+                .header("HX-Redirect", "/app")
+                .body(Body::empty())
+                .unwrap()
+        }
+        Err(_) => Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::from(
+                IncorrectUsernameOrPasswordTemplate.render().unwrap(),
+            ))
+            .unwrap(),
     }
 }

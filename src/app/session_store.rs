@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use async_trait::async_trait;
 use bb8_redis::RedisConnectionManager;
 use redis::AsyncCommands;
+use time::OffsetDateTime;
 use tower_sessions::{
     session::{Id, Record},
     session_store, SessionStore,
@@ -52,11 +53,6 @@ impl RedisStore<bb8::Pool<RedisConnectionManager>> {
 #[async_trait]
 impl SessionStore for RedisStore<bb8::Pool<RedisConnectionManager>> {
     async fn save(&self, record: &Record) -> session_store::Result<()> {
-        // TODO: Implement expiration
-        // let expire = Some(Expiration::EXAT(OffsetDateTime::unix_timestamp(
-        //     record.expiry_date,
-        // )));
-
         self.client
             .get()
             .await
@@ -66,6 +62,17 @@ impl SessionStore for RedisStore<bb8::Pool<RedisConnectionManager>> {
                 rmp_serde::to_vec(&record)
                     .map_err(RedisStoreError::Encode)?
                     .as_slice(),
+            )
+            .await
+            .map_err(RedisStoreError::Redis)?;
+
+        self.client
+            .get()
+            .await
+            .unwrap()
+            .expire_at(
+                record.id.to_string(),
+                OffsetDateTime::unix_timestamp(record.expiry_date),
             )
             .await
             .map_err(RedisStoreError::Redis)?;
@@ -81,7 +88,7 @@ impl SessionStore for RedisStore<bb8::Pool<RedisConnectionManager>> {
             .unwrap()
             .get::<String, Option<Vec<u8>>>(session_id.to_string())
             .await
-            .map_err(|e| RedisStoreError::Redis(e))?;
+            .map_err(RedisStoreError::Redis)?;
 
         if let Some(data) = data {
             Ok(Some(
