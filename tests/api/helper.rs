@@ -68,7 +68,8 @@ impl TestApp {
 
     /// Extract the confirmation links embedded in the request to the email API.
     pub fn get_confirmation_links(&self, email_request: &wiremock::Request) -> ConfirmationLinks {
-        let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
+        let body: serde_json::Value =
+            serde_json::from_slice(&email_request.body).expect("body should be a valid json");
 
         // Extract the link from one of the request fields.
         let get_link = |s: &str| {
@@ -78,15 +79,32 @@ impl TestApp {
                 .collect();
             assert_eq!(links.len(), 1);
             let raw_link = links[0].as_str().to_owned();
-            let mut confirmation_link = reqwest::Url::parse(&raw_link).unwrap();
+            let mut confirmation_link =
+                reqwest::Url::parse(&raw_link).expect("confirmation links should be present");
+
             // Let's make sure we don't call random APIs on the web
-            assert_eq!(confirmation_link.host_str().unwrap(), "127.0.0.1");
-            confirmation_link.set_port(Some(self.port)).unwrap();
+            assert_eq!(
+                confirmation_link
+                    .host_str()
+                    .expect("host string should be available"),
+                "127.0.0.1"
+            );
+            confirmation_link
+                .set_port(Some(self.port))
+                .expect("link's port should be updated");
             confirmation_link
         };
 
-        let html = get_link(body["HtmlBody"].as_str().unwrap());
-        let plain_text = get_link(body["TextBody"].as_str().unwrap());
+        let html = get_link(
+            body["HtmlBody"]
+                .as_str()
+                .expect("html body should convert to a string"),
+        );
+        let plain_text = get_link(
+            body["TextBody"]
+                .as_str()
+                .expect("text body should be a string"),
+        );
         ConfirmationLinks { html, plain_text }
     }
 }
@@ -155,5 +173,8 @@ async fn configure_cache(redis_uri: &str) -> bb8::Pool<RedisConnectionManager> {
     let manager =
         bb8_redis::RedisConnectionManager::new(redis_uri).expect("redis uri should be valid");
 
-    bb8::Pool::builder().build(manager).await.unwrap()
+    bb8::Pool::builder()
+        .build(manager)
+        .await
+        .expect("redis connection pool should be created")
 }
