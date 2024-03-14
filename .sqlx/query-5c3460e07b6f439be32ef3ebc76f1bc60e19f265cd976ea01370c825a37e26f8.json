@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE subscriptions SET status = 'confirmed' WHERE id = $1",
+  "query": "update subscriptions set status = 'confirmed' where id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "a71a1932b894572106460ca2e34a63dc0cb8c1ba7a70547add1cddbb68133c2b"
+  "hash": "5c3460e07b6f439be32ef3ebc76f1bc60e19f265cd976ea01370c825a37e26f8"
 }

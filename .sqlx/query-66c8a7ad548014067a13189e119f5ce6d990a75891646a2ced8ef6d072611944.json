@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO subscriptions (id, email, name, subscribed_at, status) VALUES ($1, $2, $3, $4, 'pending_confirmation')",
+  "query": "insert into subscriptions (id, email, name, subscribed_at, status) values ($1, $2, $3, $4, 'pending_confirmation')",
   "describe": {
     "columns": [],
     "parameters": {
@@ -13,5 +13,5 @@
     },
     "nullable": []
   },
-  "hash": "a5d93ade3e8f1aba5f00b52011855493ca156f676797ec1c8665c807c80e5a12"
+  "hash": "66c8a7ad548014067a13189e119f5ce6d990a75891646a2ced8ef6d072611944"
 }
