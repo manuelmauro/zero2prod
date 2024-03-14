@@ -1,5 +1,6 @@
 use std::time;
 
+use anyhow::Context;
 use reqwest::Client;
 use secrecy::{ExposeSecret, Secret};
 
@@ -19,14 +20,15 @@ impl EmailClient {
         sender: Email,
         authorization_token: Secret<String>,
         timeout: time::Duration,
-    ) -> Self {
-        let http_client = Client::builder().timeout(timeout).build().unwrap();
-        Self {
+    ) -> Result<Self, anyhow::Error> {
+        let http_client = Client::builder().timeout(timeout).build().context("TLS backend cannot be initialized, or the resolver cannot load the system configuration.")?;
+
+        Ok(Self {
             http_client,
             base_url,
             sender,
             authorization_token,
-        }
+        })
     }
 
     pub async fn send_email(
@@ -115,7 +117,7 @@ mod tests {
     }
 
     /// Get a test instance of `EmailClient`.
-    fn email_client(base_url: String) -> EmailClient {
+    fn email_client(base_url: String) -> Result<EmailClient, anyhow::Error> {
         EmailClient::new(
             base_url,
             email(),
@@ -137,7 +139,8 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let email_client = email_client(mock_server.uri());
+        let email_client =
+            email_client(mock_server.uri()).expect("The email client should be available");
         let _ = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
@@ -152,7 +155,8 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let email_client = email_client(mock_server.uri());
+        let email_client =
+            email_client(mock_server.uri()).expect("The email client should be available");
         let outcome = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
@@ -169,7 +173,8 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let email_client = email_client(mock_server.uri());
+        let email_client =
+            email_client(mock_server.uri()).expect("The email client should be available");
         let outcome = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
@@ -187,7 +192,8 @@ mod tests {
             .mount(&mock_server)
             .await;
 
-        let email_client = email_client(mock_server.uri());
+        let email_client =
+            email_client(mock_server.uri()).expect("The email client should be available");
         let outcome = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;

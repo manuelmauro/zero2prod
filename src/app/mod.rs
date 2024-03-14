@@ -67,7 +67,8 @@ impl App {
                 .expect("The sender email should be valid."),
             config.email_client.authorization_token,
             timeout,
-        );
+        )
+        .expect("The email client should be available");
 
         let listener = tokio::net::TcpListener::bind(format!(
             "{}:{}",
