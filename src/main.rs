@@ -9,7 +9,7 @@ use zero2prod::{app::App, config::get_configuration, telemetry::get_subscriber};
 
 #[tokio::main]
 async fn main() {
-    let config = get_configuration().expect("The configuration should load.");
+    let config = get_configuration().expect("the configuration should load");
     get_subscriber(&config.application.log_level, io::stderr).init();
 
     tracing::debug!("creating postgres connection pool");
@@ -20,7 +20,10 @@ async fn main() {
     tracing::debug!("creating redis connection pool");
     let manager = RedisConnectionManager::new(config.redis_uri.expose_secret().as_str())
         .expect("redis uri should be valid");
-    let cache = bb8::Pool::builder().build(manager).await.unwrap();
+    let cache = bb8::Pool::builder()
+        .build(manager)
+        .await
+        .expect("redis connection pool should be created");
 
     let app = App::with(config).await;
     tracing::info!(
@@ -30,5 +33,5 @@ async fn main() {
     );
     app.serve(db, cache)
         .await
-        .expect("The server should be running.");
+        .expect("the server should be running");
 }

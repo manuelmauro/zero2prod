@@ -45,7 +45,7 @@ impl TestApp {
             .get(&format!("{}/api/v1/health_check", &self.addr))
             .send()
             .await
-            .expect("The request should succeed.")
+            .expect("the request should succeed")
     }
 
     pub async fn post_subscriptions(&self, body: serde_json::Value) -> reqwest::Response {
@@ -54,7 +54,7 @@ impl TestApp {
             .json(&body)
             .send()
             .await
-            .expect("The request should succeed.")
+            .expect("the request should succeed")
     }
 
     pub async fn post_newsletters(&self, body: serde_json::Value) -> reqwest::Response {
@@ -63,7 +63,7 @@ impl TestApp {
             .json(&body)
             .send()
             .await
-            .expect("The request should succed.")
+            .expect("the request should succeed")
     }
 
     /// Extract the confirmation links embedded in the request to the email API.
@@ -95,7 +95,7 @@ pub async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
 
     let email_server = MockServer::start().await;
-    let mut config = get_configuration().expect("Failed to read configuration.");
+    let mut config = get_configuration().expect("the configuration should be available");
     config.application.port = 0;
     config.database.database_name = Uuid::new_v4().to_string();
     config.email_client.base_url = email_server.uri();
@@ -121,7 +121,7 @@ pub async fn spawn_app() -> TestApp {
     tokio::spawn(async move {
         app.serve(db, cache)
             .await
-            .expect("The server should be running")
+            .expect("the server should be running")
     });
 
     test_app
@@ -131,22 +131,22 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
     let mut connection = PgConnection::connect_with(&config.without_db())
         .await
-        .expect("A postgres connection should be created.");
+        .expect("a postgres connection should be created");
 
     connection
         .execute(format!(r#"create database "{}";"#, config.database_name).as_str())
         .await
-        .expect("The database should be created.");
+        .expect("the database should be created");
 
     // Migrate database
     let connection_pool = PgPool::connect_with(config.with_db())
         .await
-        .expect("A postgres connection pool should be created.");
+        .expect("a postgres connection pool should be created");
 
     sqlx::migrate!("./migrations")
         .run(&connection_pool)
         .await
-        .expect("The migrations should run without error.");
+        .expect("the migrations should run without error");
 
     connection_pool
 }

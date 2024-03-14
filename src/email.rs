@@ -116,7 +116,7 @@ mod tests {
         SafeEmail()
             .fake::<String>()
             .try_into()
-            .expect("Fake email should be a valid email.")
+            .expect("fake email should be a valid email")
     }
 
     /// Get a test instance of `EmailClient`.
@@ -143,7 +143,7 @@ mod tests {
             .await;
 
         let email_client =
-            email_client(mock_server.uri()).expect("The email client should be available");
+            email_client(mock_server.uri()).expect("the email client should be available");
         let _ = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
@@ -159,7 +159,7 @@ mod tests {
             .await;
 
         let email_client =
-            email_client(mock_server.uri()).expect("The email client should be available");
+            email_client(mock_server.uri()).expect("the email client should be available");
         let outcome = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
@@ -177,7 +177,7 @@ mod tests {
             .await;
 
         let email_client =
-            email_client(mock_server.uri()).expect("The email client should be available");
+            email_client(mock_server.uri()).expect("the email client should be available");
         let outcome = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;
@@ -196,7 +196,7 @@ mod tests {
             .await;
 
         let email_client =
-            email_client(mock_server.uri()).expect("The email client should be available");
+            email_client(mock_server.uri()).expect("the email client should be available");
         let outcome = email_client
             .send_email(&email(), &subject(), &content(), &content())
             .await;

@@ -67,13 +67,13 @@ impl DatabaseSettings {
 }
 
 pub fn get_configuration() -> Result<Settings, config::ConfigError> {
-    let base_path = env::current_dir().expect("The current directory should be valid.");
+    let base_path = env::current_dir().expect("the current directory should be valid");
     let configuration_directory = base_path.join("configuration");
 
     let environment: Environment = env::var("APP_ENVIRONMENT")
         .unwrap_or_else(|_| "local".into())
         .parse()
-        .expect("The APP_ENVIRONMENT environment variable should be valid.");
+        .expect("the APP_ENVIRONMENT environment variable should be valid");
 
     let settings = config::Config::builder()
         .add_source(config::File::from(

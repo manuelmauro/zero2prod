@@ -64,18 +64,18 @@ impl App {
                 .email_client
                 .sender_email
                 .try_into()
-                .expect("The sender email should be valid."),
+                .expect("the sender email should be valid"),
             config.email_client.authorization_token,
             timeout,
         )
-        .expect("The email client should be available");
+        .expect("the email client should be available");
 
         let listener = tokio::net::TcpListener::bind(format!(
             "{}:{}",
             config.application.host, config.application.port
         ))
         .await
-        .expect("The listener should be able to bind the address.");
+        .expect("the listener should be able to bind the addresst");
 
         Self {
             listener,
