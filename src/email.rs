@@ -113,7 +113,10 @@ mod tests {
 
     /// Generate a random subscriber email
     fn email() -> Email {
-        SafeEmail().fake::<String>().try_into().unwrap()
+        SafeEmail()
+            .fake::<String>()
+            .try_into()
+            .expect("Fake email should be a valid email.")
     }
 
     /// Get a test instance of `EmailClient`.
