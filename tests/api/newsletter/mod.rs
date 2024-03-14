@@ -99,15 +99,15 @@ async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
     app.post_subscriptions(body)
         .await
         .error_for_status()
-        .unwrap();
+        .expect("the request should succeed");
 
     let email_request = app
         .email_server
         .received_requests()
         .await
-        .unwrap()
+        .expect("the vector of requests should exist")
         .pop()
-        .unwrap();
+        .expect("there should be at least a request");
 
     app.get_confirmation_links(&email_request)
 }
@@ -118,7 +118,7 @@ async fn create_confirmed_subscriber(app: &TestApp) {
     let confirmation_link = create_unconfirmed_subscriber(app).await;
     reqwest::get(confirmation_link.html)
         .await
-        .unwrap()
+        .expect("the request should succeed")
         .error_for_status()
-        .unwrap();
+        .expect("the status should be success");
 }
