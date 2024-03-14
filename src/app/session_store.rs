@@ -56,7 +56,9 @@ impl SessionStore for RedisStore<bb8::Pool<RedisConnectionManager>> {
         self.client
             .get()
             .await
-            .unwrap()
+            .map_err(|_| {
+                session_store::Error::Backend("Can't get a connection from the pool".to_owned())
+            })?
             .set(
                 record.id.to_string(),
                 rmp_serde::to_vec(&record)
@@ -69,7 +71,9 @@ impl SessionStore for RedisStore<bb8::Pool<RedisConnectionManager>> {
         self.client
             .get()
             .await
-            .unwrap()
+            .map_err(|_| {
+                session_store::Error::Backend("Can't get a connection from the pool".to_owned())
+            })?
             .expire_at(
                 record.id.to_string(),
                 OffsetDateTime::unix_timestamp(record.expiry_date),
@@ -85,7 +89,9 @@ impl SessionStore for RedisStore<bb8::Pool<RedisConnectionManager>> {
             .client
             .get()
             .await
-            .unwrap()
+            .map_err(|_| {
+                session_store::Error::Backend("Can't get a connection from the pool".to_owned())
+            })?
             .get::<String, Option<Vec<u8>>>(session_id.to_string())
             .await
             .map_err(RedisStoreError::Redis)?;
@@ -103,7 +109,9 @@ impl SessionStore for RedisStore<bb8::Pool<RedisConnectionManager>> {
         self.client
             .get()
             .await
-            .unwrap()
+            .map_err(|_| {
+                session_store::Error::Backend("Can't get a connection from the pool".to_owned())
+            })?
             .del(session_id.to_string())
             .await
             .map_err(RedisStoreError::Redis)?;
