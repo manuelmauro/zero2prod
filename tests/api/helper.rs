@@ -134,7 +134,7 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("A postgres connection should be created.");
 
     connection
-        .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+        .execute(format!(r#"create database "{}";"#, config.database_name).as_str())
         .await
         .expect("The database should be created.");
 

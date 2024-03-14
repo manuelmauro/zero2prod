@@ -16,6 +16,7 @@ use crate::{config::Settings, email::EmailClient};
 use self::{session_store::RedisStore, ui::not_found::not_found_page};
 
 mod api;
+mod authentication;
 mod error;
 mod extractor;
 mod session_store;

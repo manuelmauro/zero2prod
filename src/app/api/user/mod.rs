@@ -2,7 +2,6 @@ use crate::app::AppState;
 use axum::routing::{get, post};
 use axum::Router;
 
-pub mod auth;
 pub mod route;
 pub mod schema;
 

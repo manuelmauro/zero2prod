@@ -83,7 +83,7 @@ async fn insert_subscriber(
 ) -> Result<Uuid, sqlx::Error> {
     let subscriber_id = Uuid::new_v4();
     let query = sqlx::query!(
-        r#"INSERT INTO subscriptions (id, email, name, subscribed_at, status) VALUES ($1, $2, $3, $4, 'pending_confirmation')"#,
+        r#"insert into subscriptions (id, email, name, subscribed_at, status) values ($1, $2, $3, $4, 'pending_confirmation')"#,
         subscriber_id,
         subscriber.email.as_ref(),
         subscriber.name.as_ref(),
@@ -147,8 +147,8 @@ pub async fn store_token(
     subscription_token: &str,
 ) -> Result<(), sqlx::Error> {
     let query = sqlx::query!(
-        r#"INSERT INTO subscription_tokens (subscription_token, subscriber_id)
-        VALUES ($1, $2)"#,
+        r#"insert into subscription_tokens (subscription_token, subscriber_id)
+        values ($1, $2)"#,
         subscription_token,
         subscriber_id
     );
@@ -161,7 +161,7 @@ pub async fn store_token(
 #[tracing::instrument(name = "Mark subscriber as confirmed", skip(subscriber_id, pool))]
 pub async fn confirm_subscriber(pool: &PgPool, subscriber_id: Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
-        r#"UPDATE subscriptions SET status = 'confirmed' WHERE id = $1"#,
+        r#"update subscriptions set status = 'confirmed' where id = $1"#,
         subscriber_id,
     )
     .execute(pool)

@@ -11,7 +11,7 @@ use tower_sessions::Session;
 
 use super::schema;
 use crate::app::{
-    api::user::auth::{validate_credentials, Credentials},
+    authentication::{validate_credentials, Credentials},
     extractor::session_user::SessionUser,
     AppState,
 };

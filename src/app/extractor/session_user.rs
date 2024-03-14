@@ -5,12 +5,13 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use tower_sessions::Session;
+use uuid::Uuid;
 
 const USER_ID: &str = "user_id";
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct SessionUser {
-    pub id: String,
+    pub id: Uuid,
 }
 
 #[async_trait]
@@ -22,7 +23,7 @@ where
 
     async fn from_request_parts(req: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let session = Session::from_request_parts(req, state).await?;
-        let user_id: String = session
+        let user_id: Uuid = session
             .get(USER_ID)
             .await
             .unwrap()
