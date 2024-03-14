@@ -86,11 +86,17 @@ impl App {
     }
 
     pub fn host(&self) -> IpAddr {
-        self.listener.local_addr().unwrap().ip()
+        self.listener
+            .local_addr()
+            .expect("the listener's local address should be available")
+            .ip()
     }
 
     pub fn port(&self) -> u16 {
-        self.listener.local_addr().unwrap().port()
+        self.listener
+            .local_addr()
+            .expect("the listener's local address should be available")
+            .port()
     }
 
     pub async fn serve(
